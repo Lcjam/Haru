@@ -5,7 +5,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.view.RedirectView;
 
-import com.example.demo.dto.response.ApiResponse;
+import com.example.demo.util.BaseResponse;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -50,11 +50,11 @@ public class OAuth2Controller {
      * OAuth2 로그인 상태 체크
      */
     @GetMapping("/status")
-    public ApiResponse<Map<String, Object>> status() {
+    public BaseResponse<Map<String, Object>> status() {
         Map<String, Object> response = new HashMap<>();
         response.put("message", "OAuth2 인증 서비스가 활성화되어 있습니다.");
         response.put("providers", new String[]{"google", "naver", "kakao"});
         
-        return ApiResponse.success(response);
+        return BaseResponse.success(response);
     }
 }

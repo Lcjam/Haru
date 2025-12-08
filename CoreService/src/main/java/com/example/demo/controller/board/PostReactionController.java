@@ -2,7 +2,7 @@ package com.example.demo.controller.board;
 
 import com.example.demo.dto.board.PostReactionRequest;
 import com.example.demo.dto.board.PostReactionResponse;
-import com.example.demo.dto.response.ApiResponse;
+import com.example.demo.util.BaseResponse;
 import com.example.demo.mapper.board.PostMapper;
 import com.example.demo.mapper.board.PostReactionMapper;
 import com.example.demo.model.board.PostReaction;
@@ -32,19 +32,19 @@ public class PostReactionController {
      * 게시글 반응 추가/변경
      */
     @PostMapping("/posts/{postId}/reactions")
-    public ResponseEntity<ApiResponse<?>> addReaction(
+    public ResponseEntity<BaseResponse<?>> addReaction(
             @RequestHeader("Authorization") String token,
             @PathVariable Long postId,
             @RequestBody Map<String, String> request) {
 
         String email = tokenUtils.getEmailFromAuthHeader(token);
         if (email == null) {
-            return ResponseEntity.status(401).body(ApiResponse.error("인증되지 않은 요청입니다.", "401"));
+            return ResponseEntity.status(401).body(BaseResponse.error("인증되지 않은 요청입니다.", "401"));
         }
 
         String reactionType = request.get("reactionType");
         if (reactionType == null || reactionType.isEmpty()) {
-            return ResponseEntity.badRequest().body(ApiResponse.error("반응 타입은 필수입니다.", "400"));
+            return ResponseEntity.badRequest().body(BaseResponse.error("반응 타입은 필수입니다.", "400"));
         }
 
         try {
@@ -88,11 +88,11 @@ public class PostReactionController {
             response.put("reactionType", reactionType);
             response.put("statistics", statistics);
             
-            return ResponseEntity.ok(ApiResponse.success(response));
+            return ResponseEntity.ok(BaseResponse.success(response));
         } catch (Exception e) {
             log.error("반응 처리 중 오류 발생: {}", e.getMessage(), e);
             return ResponseEntity.status(500)
-                    .body(ApiResponse.error("반응 처리 중 오류가 발생했습니다: " + e.getMessage(), "500"));
+                    .body(BaseResponse.error("반응 처리 중 오류가 발생했습니다: " + e.getMessage(), "500"));
         }
     }
 
@@ -100,19 +100,19 @@ public class PostReactionController {
      * 게시글 반응 삭제
      */
     @DeleteMapping("/posts/{postId}/reactions")
-    public ResponseEntity<ApiResponse<?>> deleteReaction(
+    public ResponseEntity<BaseResponse<?>> deleteReaction(
             @RequestHeader("Authorization") String token,
             @PathVariable Long postId) {
 
         String email = tokenUtils.getEmailFromAuthHeader(token);
         if (email == null) {
-            return ResponseEntity.status(401).body(ApiResponse.error("인증되지 않은 요청입니다.", "401"));
+            return ResponseEntity.status(401).body(BaseResponse.error("인증되지 않은 요청입니다.", "401"));
         }
 
         try {
             PostReaction existingReaction = postReactionMapper.getUserReaction(postId, email);
             if (existingReaction == null) {
-                return ResponseEntity.status(404).body(ApiResponse.error("삭제할 반응이 없습니다.", "404"));
+                return ResponseEntity.status(404).body(BaseResponse.error("삭제할 반응이 없습니다.", "404"));
             }
             
             // 'LIKE' 반응이면 like_count 감소
@@ -130,11 +130,11 @@ public class PostReactionController {
             response.put("message", "반응이 삭제되었습니다.");
             response.put("statistics", statistics);
             
-            return ResponseEntity.ok(ApiResponse.success(response));
+            return ResponseEntity.ok(BaseResponse.success(response));
         } catch (Exception e) {
             log.error("반응 삭제 중 오류 발생: {}", e.getMessage(), e);
             return ResponseEntity.status(500)
-                    .body(ApiResponse.error("반응 삭제 중 오류가 발생했습니다: " + e.getMessage(), "500"));
+                    .body(BaseResponse.error("반응 삭제 중 오류가 발생했습니다: " + e.getMessage(), "500"));
         }
     }
 
@@ -142,25 +142,25 @@ public class PostReactionController {
      * 게시글 반응 조회 (사용자의 반응 및 전체 반응 통계)
      */
     @GetMapping("/posts/{postId}/reactions")
-    public ResponseEntity<ApiResponse<?>> getPostReaction(
+    public ResponseEntity<BaseResponse<?>> getPostReaction(
             @RequestHeader("Authorization") String token,
             @PathVariable Long postId) {
         
         String email = tokenUtils.getEmailFromAuthHeader(token);
         
         if (email == null) {
-            return ResponseEntity.status(401).body(ApiResponse.error("인증되지 않은 요청입니다.", "401"));
+            return ResponseEntity.status(401).body(BaseResponse.error("인증되지 않은 요청입니다.", "401"));
         }
         
         try {
             PostReactionResponse response = postReactionService.getPostReaction(email, postId);
-            return ResponseEntity.ok(ApiResponse.success(response));
+            return ResponseEntity.ok(BaseResponse.success(response));
         } catch (IllegalArgumentException e) {
             log.warn("게시글 반응 조회 실패: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage(), "400"));
+            return ResponseEntity.badRequest().body(BaseResponse.error(e.getMessage(), "400"));
         } catch (Exception e) {
             log.error("게시글 반응 조회 중 오류: {}", e.getMessage());
-            return ResponseEntity.status(500).body(ApiResponse.error("서버 오류가 발생했습니다.", "500"));
+            return ResponseEntity.status(500).body(BaseResponse.error("서버 오류가 발생했습니다.", "500"));
         }
     }
 
@@ -168,36 +168,36 @@ public class PostReactionController {
      * 게시글 반응 목록 조회
      */
     @GetMapping("/posts/{postId}/reactions/list")
-    public ResponseEntity<ApiResponse<?>> getPostReactions(
+    public ResponseEntity<BaseResponse<?>> getPostReactions(
             @RequestHeader("Authorization") String token,
             @PathVariable Long postId) {
         
         String email = tokenUtils.getEmailFromAuthHeader(token);
         
         if (email == null) {
-            return ResponseEntity.status(401).body(ApiResponse.error("인증되지 않은 요청입니다.", "401"));
+            return ResponseEntity.status(401).body(BaseResponse.error("인증되지 않은 요청입니다.", "401"));
         }
         
         try {
             List<PostReactionResponse> responses = postReactionService.getPostReactions(email, postId);
-            return ResponseEntity.ok(ApiResponse.success(responses));
+            return ResponseEntity.ok(BaseResponse.success(responses));
         } catch (IllegalArgumentException e) {
             log.warn("게시글 반응 목록 조회 실패: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage(), "400"));
+            return ResponseEntity.badRequest().body(BaseResponse.error(e.getMessage(), "400"));
         } catch (Exception e) {
             log.error("게시글 반응 목록 조회 중 오류: {}", e.getMessage());
-            return ResponseEntity.status(500).body(ApiResponse.error("서버 오류가 발생했습니다.", "500"));
+            return ResponseEntity.status(500).body(BaseResponse.error("서버 오류가 발생했습니다.", "500"));
         }
     }
 
     @PostMapping("/{postId}/like")
-    public ResponseEntity<ApiResponse<?>> toggleLike(
+    public ResponseEntity<BaseResponse<?>> toggleLike(
             @RequestHeader("Authorization") String token,
             @PathVariable Long postId) {
 
         String email = tokenUtils.getEmailFromAuthHeader(token);
         if (email == null) {
-            return ResponseEntity.status(401).body(ApiResponse.error("인증되지 않은 요청입니다.", "401"));
+            return ResponseEntity.status(401).body(BaseResponse.error("인증되지 않은 요청입니다.", "401"));
         }
 
         try {
@@ -225,11 +225,11 @@ public class PostReactionController {
             Integer likeCount = postMapper.getPostById(postId).getLikeCount();
             response.put("likeCount", likeCount);
 
-            return ResponseEntity.ok(ApiResponse.success(response));
+            return ResponseEntity.ok(BaseResponse.success(response));
         } catch (Exception e) {
             log.error("좋아요 처리 중 오류 발생: {}", e.getMessage(), e);
             return ResponseEntity.status(500)
-                    .body(ApiResponse.error("좋아요 처리 중 오류가 발생했습니다: " + e.getMessage(), "500"));
+                    .body(BaseResponse.error("좋아요 처리 중 오류가 발생했습니다: " + e.getMessage(), "500"));
         }
     }
 }

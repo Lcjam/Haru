@@ -1,11 +1,11 @@
 package com.example.demo.controller;
 
-import com.example.demo.dto.response.*;
 import com.example.demo.dto.profile.*;
 import com.example.demo.dto.auth.*;
 import com.example.demo.dto.hobby.*;
 import com.example.demo.service.FileStorageService;
 import com.example.demo.service.UserService;
+import com.example.demo.util.BaseResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
@@ -29,35 +29,35 @@ public class ProfileController {
      * 자신의 프로필 조회
      */
     @GetMapping("/me")
-    public ResponseEntity<ApiResponse<ProfileResponse>> getMyProfile(@RequestHeader("Authorization") String token) {
+    public ResponseEntity<BaseResponse<ProfileResponse>> getMyProfile(@RequestHeader("Authorization") String token) {
         ProfileResponse profile = userService.getUserProfileByToken(token);
         
         if (!profile.isSuccess()) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(profile, "400"));
+            return ResponseEntity.badRequest().body(BaseResponse.error(profile, "400"));
         }
         
-        return ResponseEntity.ok(ApiResponse.success(profile));
+        return ResponseEntity.ok(BaseResponse.success(profile));
     }
     
     /**
      * 닉네임으로 다른 사용자의 프로필 조회 (공개 정보만)
      */
     @GetMapping("/user/{nickname}")
-    public ResponseEntity<ApiResponse<ProfileResponse>> getUserProfile(@PathVariable String nickname) {
+    public ResponseEntity<BaseResponse<ProfileResponse>> getUserProfile(@PathVariable String nickname) {
         ProfileResponse profile = userService.getPublicProfile(nickname);
         
         if (!profile.isSuccess()) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(profile, "400"));
+            return ResponseEntity.badRequest().body(BaseResponse.error(profile, "400"));
         }
         
-        return ResponseEntity.ok(ApiResponse.success(profile));
+        return ResponseEntity.ok(BaseResponse.success(profile));
     }
     
     /**
      * 이메일로 사용자 프로필 조회 (관리자 기능)
      */
     @GetMapping("/admin/user/{email}")
-    public ResponseEntity<ApiResponse<ProfileResponse>> getAdminUserProfile(
+    public ResponseEntity<BaseResponse<ProfileResponse>> getAdminUserProfile(
             @RequestHeader("Authorization") String token,
             @PathVariable String email) {
         
@@ -65,17 +65,17 @@ public class ProfileController {
         ProfileResponse profile = userService.getUserProfile(email);
         
         if (!profile.isSuccess()) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(profile, "400"));
+            return ResponseEntity.badRequest().body(BaseResponse.error(profile, "400"));
         }
         
-        return ResponseEntity.ok(ApiResponse.success(profile));
+        return ResponseEntity.ok(BaseResponse.success(profile));
     }
     
     /**
      * 자신의 프로필 수정
      */
     @PutMapping("/me")
-    public ResponseEntity<ApiResponse<ProfileUpdateResponse>> updateMyProfile(
+    public ResponseEntity<BaseResponse<ProfileUpdateResponse>> updateMyProfile(
             @RequestHeader("Authorization") String token,
             @RequestBody ProfileUpdateRequest request) {
         
@@ -83,7 +83,7 @@ public class ProfileController {
         if (request.getHobbies() != null && !request.getHobbies().isEmpty()) {
             for (HobbyRequest hobby : request.getHobbies()) {
                 if (hobby.getCategoryId() == null || hobby.getHobbyId() == null) {
-                    return ResponseEntity.badRequest().body(ApiResponse.error(
+                    return ResponseEntity.badRequest().body(BaseResponse.error(
                         ProfileUpdateResponse.builder()
                             .success(false)
                             .message("카테고리 또는 취미 정보가 누락되었습니다.")
@@ -97,34 +97,34 @@ public class ProfileController {
         ProfileUpdateResponse response = userService.updateProfileByToken(token, request);
         
         if (!response.isSuccess()) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(response, "400"));
+            return ResponseEntity.badRequest().body(BaseResponse.error(response, "400"));
         }
         
-        return ResponseEntity.ok(ApiResponse.success(response));
+        return ResponseEntity.ok(BaseResponse.success(response));
     }
     
     /**
      * 비밀번호 변경
      */
     @PutMapping("/me/password")
-    public ResponseEntity<ApiResponse<PasswordChangeResponse>> changePassword(
+    public ResponseEntity<BaseResponse<PasswordChangeResponse>> changePassword(
             @RequestHeader("Authorization") String token,
             @RequestBody PasswordChangeRequest request) {
         
         PasswordChangeResponse response = userService.changePasswordByToken(token, request);
         
         if (!response.isSuccess()) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(response, "400"));
+            return ResponseEntity.badRequest().body(BaseResponse.error(response, "400"));
         }
         
-        return ResponseEntity.ok(ApiResponse.success(response));
+        return ResponseEntity.ok(BaseResponse.success(response));
     }
     
     /**
      * 프로필 이미지 업로드
      */
     @PostMapping("/me/image")
-    public ResponseEntity<ApiResponse<ProfileImageResponse>> uploadProfileImage(
+    public ResponseEntity<BaseResponse<ProfileImageResponse>> uploadProfileImage(
             @RequestHeader("Authorization") String token,
             @RequestParam("file") MultipartFile file) {
         
@@ -134,31 +134,31 @@ public class ProfileController {
                     .success(false)
                     .message("업로드할 파일이 비어있습니다.")
                     .build();
-            return ResponseEntity.badRequest().body(ApiResponse.error(errorResponse, "400"));
+            return ResponseEntity.badRequest().body(BaseResponse.error(errorResponse, "400"));
         }
         
         try {
             ProfileImageResponse response = userService.uploadProfileImageByToken(token, file);
             
             if (!response.isSuccess()) {
-                return ResponseEntity.badRequest().body(ApiResponse.error(response, "400"));
+                return ResponseEntity.badRequest().body(BaseResponse.error(response, "400"));
             }
             
-            return ResponseEntity.ok(ApiResponse.success(response));
+            return ResponseEntity.ok(BaseResponse.success(response));
         } catch (IllegalArgumentException e) {
             // 파일 형식이나 크기 검증 실패 시
             ProfileImageResponse errorResponse = ProfileImageResponse.builder()
                     .success(false)
                     .message(e.getMessage())
                     .build();
-            return ResponseEntity.badRequest().body(ApiResponse.error(errorResponse, "400"));
+            return ResponseEntity.badRequest().body(BaseResponse.error(errorResponse, "400"));
         } catch (Exception e) {
             log.error("이미지 업로드 중 예상치 못한 오류 발생: {}", e.getMessage());
             ProfileImageResponse errorResponse = ProfileImageResponse.builder()
                     .success(false)
                     .message("이미지 업로드 중 서버 오류가 발생했습니다.")
                     .build();
-            return ResponseEntity.status(500).body(ApiResponse.error(errorResponse, "500"));
+            return ResponseEntity.status(500).body(BaseResponse.error(errorResponse, "500"));
         }
     }
     
@@ -166,23 +166,23 @@ public class ProfileController {
      * 프로필 이미지 삭제
      */
     @DeleteMapping("/me/image")
-    public ResponseEntity<ApiResponse<ProfileImageResponse>> deleteProfileImage(
+    public ResponseEntity<BaseResponse<ProfileImageResponse>> deleteProfileImage(
             @RequestHeader("Authorization") String token) {
         
         ProfileImageResponse response = userService.deleteProfileImageByToken(token);
         
         if (!response.isSuccess()) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(response, "400"));
+            return ResponseEntity.badRequest().body(BaseResponse.error(response, "400"));
         }
         
-        return ResponseEntity.ok(ApiResponse.success(response));
+        return ResponseEntity.ok(BaseResponse.success(response));
     }
     
     /**
      * 프로필 이미지 정보 조회
      */
     @GetMapping("/me/image-info")
-    public ResponseEntity<ApiResponse<Map<String, String>>> getMyProfileImageInfo(
+    public ResponseEntity<BaseResponse<Map<String, String>>> getMyProfileImageInfo(
             @RequestHeader("Authorization") String token) {
         
         String tokenWithoutBearer = token;
@@ -193,7 +193,7 @@ public class ProfileController {
         if (!userService.tokenUtils.isTokenValid(tokenWithoutBearer)) {
             Map<String, String> errorData = new HashMap<>();
             errorData.put("message", "유효하지 않은 인증 토큰입니다.");
-            return ResponseEntity.badRequest().body(ApiResponse.error(errorData, "400"));
+            return ResponseEntity.badRequest().body(BaseResponse.error(errorData, "400"));
         }
         
         String email = userService.tokenUtils.getEmailFromToken(tokenWithoutBearer);
@@ -202,7 +202,7 @@ public class ProfileController {
         Map<String, String> responseData = new HashMap<>();
         responseData.put("imageUrl", imageUrl);
         
-        return ResponseEntity.ok(ApiResponse.success(responseData));
+        return ResponseEntity.ok(BaseResponse.success(responseData));
     }
     
     /**
@@ -286,13 +286,13 @@ public class ProfileController {
      * 마이페이지 정보 조회
      */
     @GetMapping("/mypage")
-    public ResponseEntity<ApiResponse<MyPageResponse>> getMyPageInfo(@RequestHeader("Authorization") String token) {
+    public ResponseEntity<BaseResponse<MyPageResponse>> getMyPageInfo(@RequestHeader("Authorization") String token) {
         MyPageResponse myPage = userService.getMyPageInfoByToken(token);
         
         if (!myPage.isSuccess()) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(myPage, "400"));
+            return ResponseEntity.badRequest().body(BaseResponse.error(myPage, "400"));
         }
         
-        return ResponseEntity.ok(ApiResponse.success(myPage));
+        return ResponseEntity.ok(BaseResponse.success(myPage));
     }
 }
