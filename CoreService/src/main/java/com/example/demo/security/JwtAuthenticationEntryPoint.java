@@ -1,6 +1,6 @@
 package com.example.demo.security;
 
-import com.example.demo.dto.response.ApiResponse;
+import com.example.demo.util.BaseResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -25,7 +25,7 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
         response.setStatus(HttpStatus.UNAUTHORIZED.value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         
-        ApiResponse<?> errorResponse = ApiResponse.error("인증에 실패했습니다. 유효한 토큰이 필요합니다.", "401");
+        BaseResponse<?> errorResponse = BaseResponse.error("인증에 실패했습니다. 유효한 토큰이 필요합니다.", "401");
         response.getWriter().write(objectMapper.writeValueAsString(errorResponse));
     }
 }

@@ -1,6 +1,6 @@
 package com.example.demo.controller;
 
-import com.example.demo.dto.response.ApiResponse;
+import com.example.demo.util.BaseResponse;
 import com.example.demo.model.Location;
 import com.example.demo.service.LocationService;
 import com.example.demo.util.TokenUtils;
@@ -88,7 +88,7 @@ public class LocationController {
      * JWT 토큰으로 인증된 사용자의 HTTP 요청을 처리합니다.
      */
     @GetMapping("/rooms/{chatroomId}/recent")
-    public ResponseEntity<ApiResponse<?>> getRecentLocations(
+    public ResponseEntity<BaseResponse<?>> getRecentLocations(
             @RequestHeader("Authorization") String token,
             @PathVariable Integer chatroomId) {
         
@@ -96,16 +96,16 @@ public class LocationController {
         
         if (email == null) {
             return ResponseEntity.status(401)
-                    .body(ApiResponse.error("인증되지 않은 요청입니다.", "401"));
+                    .body(BaseResponse.error("인증되지 않은 요청입니다.", "401"));
         }
         
         try {
             var locations = locationService.getRecentLocations(chatroomId);
-            return ResponseEntity.ok(ApiResponse.success(locations));
+            return ResponseEntity.ok(BaseResponse.success(locations));
         } catch (Exception e) {
             log.error("위치 정보 조회 중 오류 발생: {}", e.getMessage());
             return ResponseEntity.status(500)
-                    .body(ApiResponse.error("서버 오류가 발생했습니다.", "500"));
+                    .body(BaseResponse.error("서버 오류가 발생했습니다.", "500"));
         }
     }
 
@@ -113,7 +113,7 @@ public class LocationController {
      * 특정 사용자의 마지막 위치 조회 상대방의 위치 초기값으로 설정하기 좋을듯
      */
     @GetMapping("/rooms/{chatroomId}/users/{email}/last")
-    public ResponseEntity<ApiResponse<?>> getLastLocation(
+    public ResponseEntity<BaseResponse<?>> getLastLocation(
             @RequestHeader("Authorization") String token,
             @PathVariable Integer chatroomId,
             @PathVariable String email) {
@@ -122,16 +122,16 @@ public class LocationController {
         
         if (requestEmail == null) {
             return ResponseEntity.status(401)
-                    .body(ApiResponse.error("인증되지 않은 요청입니다.", "401"));
+                    .body(BaseResponse.error("인증되지 않은 요청입니다.", "401"));
         }
         
         try {
             var location = locationService.getLastLocation(chatroomId, email);
-            return ResponseEntity.ok(ApiResponse.success(location));
+            return ResponseEntity.ok(BaseResponse.success(location));
         } catch (Exception e) {
             log.error("위치 정보 조회 중 오류 발생: {}", e.getMessage());
             return ResponseEntity.status(500)
-                    .body(ApiResponse.error("서버 오류가 발생했습니다.", "500"));
+                    .body(BaseResponse.error("서버 오류가 발생했습니다.", "500"));
         }
     }
 }

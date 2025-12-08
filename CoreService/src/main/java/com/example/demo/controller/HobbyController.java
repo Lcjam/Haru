@@ -1,6 +1,6 @@
 package com.example.demo.controller;
 
-import com.example.demo.dto.response.ApiResponse;
+import com.example.demo.util.BaseResponse;
 import com.example.demo.dto.hobby.HobbyRequest;
 import com.example.demo.model.Category;
 import com.example.demo.model.Hobby;
@@ -29,36 +29,36 @@ public class HobbyController {
      * 모든 취미 목록 조회 (카테고리 정보 포함)
      */
     @GetMapping
-    public ResponseEntity<ApiResponse<List<Hobby>>> getAllHobbies() {
+    public ResponseEntity<BaseResponse<List<Hobby>>> getAllHobbies() {
         List<Hobby> hobbies = hobbyService.getAllHobbiesWithCategories();
-        return ResponseEntity.ok(ApiResponse.success(hobbies));
+        return ResponseEntity.ok(BaseResponse.success(hobbies));
     }
     
     /**
      * 모든 취미 목록 조회 (카테고리 정보 미포함)
      */
     @GetMapping("/simple")
-    public ResponseEntity<ApiResponse<List<Hobby>>> getAllHobbiesSimple() {
+    public ResponseEntity<BaseResponse<List<Hobby>>> getAllHobbiesSimple() {
         List<Hobby> hobbies = hobbyService.getAllHobbies();
-        return ResponseEntity.ok(ApiResponse.success(hobbies));
+        return ResponseEntity.ok(BaseResponse.success(hobbies));
     }
     
     /**
      * 모든 카테고리 목록 조회
      */
     @GetMapping("/categories")
-    public ResponseEntity<ApiResponse<List<Category>>> getAllCategories() {
+    public ResponseEntity<BaseResponse<List<Category>>> getAllCategories() {
         List<Category> categories = hobbyService.getAllCategories();
-        return ResponseEntity.ok(ApiResponse.success(categories));
+        return ResponseEntity.ok(BaseResponse.success(categories));
     }
     
     /**
      * 특정 카테고리에 속한 취미 목록 조회
      */
     @GetMapping("/categories/{categoryId}")
-    public ResponseEntity<ApiResponse<List<Hobby>>> getHobbiesByCategoryId(@PathVariable Long categoryId) {
+    public ResponseEntity<BaseResponse<List<Hobby>>> getHobbiesByCategoryId(@PathVariable Long categoryId) {
         List<Hobby> hobbies = hobbyService.getHobbiesByCategoryId(categoryId);
-        return ResponseEntity.ok(ApiResponse.success(hobbies));
+        return ResponseEntity.ok(BaseResponse.success(hobbies));
     }
 
     /**
@@ -71,11 +71,11 @@ public class HobbyController {
         if (email == null) {
             Map<String, String> errorData = new HashMap<>();
             errorData.put("message", "인증되지 않은 요청입니다.");
-            return ResponseEntity.status(401).body(ApiResponse.error(errorData, "401"));
+            return ResponseEntity.status(401).body(BaseResponse.error(errorData, "401"));
         }
         
         List<UserHobby> userHobbies = hobbyService.getUserHobbies(email);
-        return ResponseEntity.ok(ApiResponse.success(userHobbies));
+        return ResponseEntity.ok(BaseResponse.success(userHobbies));
     }
 
     /**
@@ -91,7 +91,7 @@ public class HobbyController {
         if (email == null) {
             Map<String, String> errorData = new HashMap<>();
             errorData.put("message", "인증되지 않은 요청입니다.");
-            return ResponseEntity.status(401).body(ApiResponse.error(errorData, "401"));
+            return ResponseEntity.status(401).body(BaseResponse.error(errorData, "401"));
         }
         
         try {
@@ -101,7 +101,7 @@ public class HobbyController {
             responseData.put("message", "취미 정보가 업데이트되었습니다.");
             responseData.put("count", hobbies.size());
             
-            return ResponseEntity.ok(ApiResponse.success(responseData));
+            return ResponseEntity.ok(BaseResponse.success(responseData));
             
         } catch (Exception e) {
             log.error("취미 업데이트 중 오류 발생: {}", e.getMessage());
@@ -109,7 +109,7 @@ public class HobbyController {
             Map<String, Object> errorData = new HashMap<>();
             errorData.put("message", "취미 정보 업데이트 중 오류가 발생했습니다: " + e.getMessage());
             
-            return ResponseEntity.badRequest().body(ApiResponse.error(errorData, "400"));
+            return ResponseEntity.badRequest().body(BaseResponse.error(errorData, "400"));
         }
     }
 }
