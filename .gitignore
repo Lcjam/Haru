@@ -25,3 +25,8 @@ dist-ssr
 *.sql
 *.md
 /Postman/*
+
+# Environment variables
+.env
+.env.local
+.env.*.local
