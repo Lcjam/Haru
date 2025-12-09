@@ -161,29 +161,31 @@ redis-cli ping  # PONG 응답 확인
 
 ### 3. 환경 변수 설정
 
-#### CoreService 설정
+#### 환경 변수 파일 생성
 
-`CoreService/src/main/resources/application.properties`:
-
-```properties
-# MySQL 설정
-spring.datasource.url=jdbc:mysql://localhost:3306/haru_db
-spring.datasource.username=root
-spring.datasource.password=YOUR_PASSWORD
-
-# Redis 설정
-spring.data.redis.host=localhost
-spring.data.redis.port=6379
+```bash
+# 프로젝트 루트에서
+cp env.example .env
 ```
 
-#### AssistService 설정 (선택사항)
+#### .env 파일 수정
 
-`AssistService/src/main/resources/application.properties`에서 환경 변수 설정:
+`.env` 파일을 열어서 실제 값으로 변경하세요:
 
-- `SMS_API_KEY`
-- `NAVER_CLOUD_CHATBOT_SECRET_KEY`
-- `NAVER_CLOUD_OCR_SECRET_KEY`
-- `KAKAO_REST_API_KEY`
+```bash
+# 필수 설정
+DB_PASSWORD=your_mysql_password
+JWT_SECRET=your_jwt_secret_key
+
+# 선택적 설정 (AssistService 사용 시)
+SMS_API_KEY=your_sms_api_key
+NAVER_CLOUD_CHATBOT_SECRET_KEY=your_naver_key
+# ... 기타 API 키들
+```
+
+**⚠️ 중요**: `.env` 파일은 Git에 커밋되지 않습니다. 실제 비밀번호를 안전하게 관리하세요.
+
+자세한 설정 방법은 [ENV_SETUP.md](./ENV_SETUP.md)를 참고하세요.
 
 ### 4. 프로젝트 실행
 
