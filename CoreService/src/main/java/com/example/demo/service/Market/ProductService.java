@@ -114,7 +114,7 @@ public class ProductService {
             ProductResponse productResponse = convertToProductResponse(product);
 
             // 성공 메시지
-            return ResponseEntity.ok(new BaseResponse<>("success", "상품이 성공적으로 등록되었습니다.", productResponse));
+            return ResponseEntity.ok(new BaseResponse<>(productResponse, "상품이 성공적으로 등록되었습니다."));
 
         } catch (Exception ex) {
             return ResponseEntity.internalServerError()
