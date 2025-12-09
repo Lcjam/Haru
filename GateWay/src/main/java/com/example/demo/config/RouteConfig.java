@@ -1,6 +1,7 @@
 package com.example.demo.config;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.cloud.gateway.route.RouteLocator;
@@ -14,7 +15,8 @@ public class RouteConfig {
     @Autowired
     private JwtAuthenticationFilter jwtFilter;
 
-    private String activeProfile = "prod";
+    @Value("${spring.profiles.active:dev}")
+    private String activeProfile;
 
     @Bean
     public RouteLocator customRouteLocator(RouteLocatorBuilder builder) {
