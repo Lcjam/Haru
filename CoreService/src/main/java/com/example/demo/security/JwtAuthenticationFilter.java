@@ -8,10 +8,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -19,15 +22,50 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider jwtTokenProvider;
     private final JwtTokenBlacklistService blacklistService;
+    private final AntPathMatcher pathMatcher = new AntPathMatcher();
+
+    // 인증이 필요 없는 공개 경로 목록
+    private static final List<String> PUBLIC_PATHS = Arrays.asList(
+            "/api/core/auth/signup",
+            "/api/core/auth/login",
+            "/api/core/auth/logout",
+            "/api/core/auth/me/password/notoken",
+            "/api/core/auth/me/password",
+            "/api/core/auth/oauth2/**", // OAuth2 관련 경로 추가
+            "/api/core/hobbies/**",
+            "/api/core/profiles/user/*",
+            "/api/core/market/products/all",
+            "/api/core/market/products/all/filter",
+            "/api/core/market/products/images/**",
+            "/api/core/market/products/{id}",
+            "/api/core/chat/**",
+            "/api/core/chat/rooms/**",
+            "/api/core/chat/rooms/{chatroomId}/read",
+            "/api/core/chat/rooms/{chatroomId}/approve",
+            "/api/core/chat/messages/**",
+            "/api/core/boards/{boardId}/members",
+            "/api/core/market/products/requests/approval-status",
+            "/ws",
+            "/ws/**",
+            "/ws/redis/**",
+            "/topic/**",
+            "/app/**",
+            "/swagger-ui/**", // Swagger UI 경로 추가
+            "/v3/api-docs/**" // OpenAPI 문서 경로 추가
+    );
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
-        // WebSocket 요청인지 확인하고 필터링 제외
+        String path = request.getRequestURI();
+
+        // WebSocket 요청은 필터링 제외
         String upgradeHeader = request.getHeader("Upgrade");
         if (upgradeHeader != null && "websocket".equalsIgnoreCase(upgradeHeader)) {
-            return true; // WebSocket 요청은 필터링 제외
+            return true;
         }
-        return false;
+
+        // 공개 경로인 경우 필터링 제외
+        return PUBLIC_PATHS.stream().anyMatch(p -> pathMatcher.match(p, path));
     }
 
     @Override
