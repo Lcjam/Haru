@@ -38,7 +38,11 @@ const InterestSelect: React.FC<InterestSelectProps> = ({ onInterestSelect, selec
 
   if (error) {
     console.error('InterestSelect 에러:', error);
+    // 에러가 있어도 빈 배열로 표시 (에러 메시지는 placeholder에만)
   }
+
+  // 카테고리가 비어있고 에러가 있으면 에러 메시지 표시
+  const hasError = error && categories.length === 0;
 
   return (
     <Select
@@ -48,8 +52,9 @@ const InterestSelect: React.FC<InterestSelectProps> = ({ onInterestSelect, selec
       }))}
       onChange={handleCategorySelect}
       className="w-full bg-primary-300 text-text-light dark:bg-gray-800"
-      placeholder={error ? "카테고리 로딩 실패" : "관심사를 선택해주세요"}
+      placeholder={hasError ? `카테고리 로딩 실패: ${error}` : categories.length === 0 ? "로딩 중..." : "관심사를 선택해주세요"}
       value={selectedCategory ? selectedCategory.toString() : ''}
+      disabled={hasError}
     />
   );
 };
