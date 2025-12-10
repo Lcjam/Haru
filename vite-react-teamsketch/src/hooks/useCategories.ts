@@ -14,6 +14,9 @@ export const useCategories = () => {
   const dispatch = useAppDispatch();
   const { categories, selectedCategoryId, loading, error, constantCategories, constantHobbies } =
     useAppSelector((state) => state.category);
+  
+  // 에러 상태를 추적하기 위한 ref (취미 에러가 카테고리 에러를 덮어쓰지 않도록)
+  const categoryErrorRef = useRef<string | null>(null);
 
   const fetchCategories = async () => {
     try {
