@@ -61,11 +61,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         // WebSocket 요청은 필터링 제외
         String upgradeHeader = request.getHeader("Upgrade");
         if (upgradeHeader != null && "websocket".equalsIgnoreCase(upgradeHeader)) {
+            log.debug("WebSocket 요청으로 필터링 제외: {}", path);
             return true;
         }
 
         // 공개 경로인 경우 필터링 제외
-        return PUBLIC_PATHS.stream().anyMatch(p -> pathMatcher.match(p, path));
+        boolean isPublic = PUBLIC_PATHS.stream().anyMatch(p -> pathMatcher.match(p, path));
+        if (isPublic) {
+            log.debug("공개 경로로 필터링 제외: {}", path);
+        } else {
+            log.debug("인증 필요 경로: {}", path);
+        }
+        return isPublic;
     }
 
     @Override
