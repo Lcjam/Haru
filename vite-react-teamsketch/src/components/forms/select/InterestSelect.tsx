@@ -1,6 +1,5 @@
 import Select from '../../common/Select';
 import { useAppSelector } from '../../../store/hooks';
-import { useCategories } from '../../../hooks/useCategories';
 
 interface InterestSelectProps {
   onInterestSelect: (categoryId: number) => void;
@@ -13,12 +12,6 @@ interface InterestSelectProps {
 
 const InterestSelect: React.FC<InterestSelectProps> = ({ onInterestSelect, selectedCategory }) => {
   const { categories, loading, error } = useAppSelector((state) => state.category);
-  const { retry } = useCategories();
-  
-  // 디버깅용 로그
-  console.log('InterestSelect - categories:', categories);
-  console.log('InterestSelect - loading:', loading);
-  console.log('InterestSelect - error:', error);
   
   const handleCategorySelect = (value: string) => {
     onInterestSelect(Number(value));
@@ -38,47 +31,29 @@ const InterestSelect: React.FC<InterestSelectProps> = ({ onInterestSelect, selec
     );
   }
 
-  if (error) {
-    console.error('InterestSelect 에러:', error);
-    // 에러가 있어도 빈 배열로 표시 (에러 메시지는 placeholder에만)
-  }
-
   // 카테고리가 비어있고 에러가 있으면 에러 메시지 표시
   const hasError = error && categories.length === 0;
 
   return (
-    <div className="w-full">
-      <Select
-        options={categories.map((category) => ({
-          value: category.categoryId.toString(),
-          label: category.categoryName
-        }))}
-        onChange={handleCategorySelect}
-        className="w-full bg-primary-300 text-text-light dark:bg-gray-800"
-        placeholder={
-          hasError 
-            ? error.length > 40 
-              ? `${error.substring(0, 40)}...` 
-              : error
-            : categories.length === 0 
-              ? "로딩 중..." 
-              : "관심사를 선택해주세요"
-        }
-        value={selectedCategory ? selectedCategory.toString() : ''}
-        disabled={hasError}
-      />
-      {hasError && (
-        <button
-          type="button"
-          onClick={() => {
-            retry();
-          }}
-          className="mt-1 text-xs text-primary-500 hover:text-primary-700 underline"
-        >
-          재시도
-        </button>
-      )}
-    </div>
+    <Select
+      options={categories.map((category) => ({
+        value: category.categoryId.toString(),
+        label: category.categoryName
+      }))}
+      onChange={handleCategorySelect}
+      className="w-full bg-primary-300 text-text-light dark:bg-gray-800"
+      placeholder={
+        hasError 
+          ? error.length > 40 
+            ? `${error.substring(0, 40)}...` 
+            : error
+          : categories.length === 0 
+            ? "로딩 중..." 
+            : "관심사를 선택해주세요"
+      }
+      value={selectedCategory ? selectedCategory.toString() : ''}
+      disabled={hasError}
+    />
   );
 };
 

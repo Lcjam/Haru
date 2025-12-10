@@ -22,11 +22,9 @@ export const useCategories = () => {
     try {
       dispatch(setLoading(true));
       const response = await axiosInstance.get(apiConfig.endpoints.core.getCategory);
-      console.log('카테고리 API 응답:', response.data); // 디버깅용
       if (response.data.status === 'success') {
         dispatch(setCategories(response.data.data));
         dispatch(setConstantCategories(response.data.data));
-        console.log('카테고리 데이터 저장 완료:', response.data.data); // 디버깅용
         categoryErrorRef.current = null; // 성공 시 에러 초기화
       } else {
         console.error('카테고리 API 응답 오류:', response.data);
@@ -81,10 +79,8 @@ export const useCategories = () => {
     try {
       // 카테고리 로딩이 완료된 후에만 로딩 상태 변경 (중복 방지)
       const response = await axiosInstance.get(apiConfig.endpoints.core.getHobbies);
-      console.log('취미 API 응답:', response.data); // 디버깅용
       if (response.data.status === 'success') {
         dispatch(setConstantHobbies(response.data.data));
-        console.log('취미 데이터 저장 완료:', response.data.data); // 디버깅용
       } else {
         console.error('취미 API 응답 오류:', response.data);
         // 취미 로딩 실패는 카테고리 에러로 덮어쓰지 않음
@@ -109,20 +105,12 @@ export const useCategories = () => {
     initializeData();
   }, []);
 
-  // 재시도 함수 추가
-  const retry = () => {
-    dispatch(setError(null));
-    categoryErrorRef.current = null;
-    fetchCategories();
-  };
-
   return {
     categories,
     selectedCategoryId,
     loading,
     error,
     constantCategories,
-    constantHobbies,
-    retry
+    constantHobbies
   };
 };
