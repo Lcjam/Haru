@@ -37,7 +37,32 @@ export const useCategories = () => {
     } catch (error: any) {
       console.error('카테고리 API 호출 실패:', error);
       console.error('에러 상세:', error.response?.data || error.message);
-      const errorMessage = error.response?.data?.message || error.message || '카테고리 로딩 중 오류가 발생했습니다.';
+      
+      // 사용자 친화적인 에러 메시지 생성
+      let errorMessage = '카테고리 로딩 중 오류가 발생했습니다.';
+      
+      if (error.response) {
+        // HTTP 응답이 있는 경우 (4xx, 5xx)
+        const status = error.response.status;
+        if (status === 401) {
+          errorMessage = '인증이 필요합니다. 페이지를 새로고침해주세요.';
+        } else if (status === 403) {
+          errorMessage = '접근 권한이 없습니다.';
+        } else if (status === 404) {
+          errorMessage = '카테고리 정보를 찾을 수 없습니다.';
+        } else if (status >= 500) {
+          errorMessage = '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
+        } else {
+          errorMessage = error.response.data?.message || `서버 오류 (${status})가 발생했습니다.`;
+        }
+      } else if (error.request) {
+        // 요청은 보냈지만 응답을 받지 못한 경우 (네트워크 에러)
+        errorMessage = '서버에 연결할 수 없습니다. 네트워크 연결을 확인해주세요.';
+      } else {
+        // 요청 설정 중 에러가 발생한 경우
+        errorMessage = error.message || '카테고리 로딩 중 오류가 발생했습니다.';
+      }
+      
       categoryErrorRef.current = errorMessage;
       dispatch(setError(errorMessage));
     } finally {

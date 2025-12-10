@@ -52,7 +52,15 @@ const InterestSelect: React.FC<InterestSelectProps> = ({ onInterestSelect, selec
       }))}
       onChange={handleCategorySelect}
       className="w-full bg-primary-300 text-text-light dark:bg-gray-800"
-      placeholder={hasError ? `카테고리 로딩 실패: ${error}` : categories.length === 0 ? "로딩 중..." : "관심사를 선택해주세요"}
+      placeholder={
+        hasError 
+          ? error.length > 30 
+            ? `${error.substring(0, 30)}...` 
+            : error
+          : categories.length === 0 
+            ? "로딩 중..." 
+            : "관심사를 선택해주세요"
+      }
       value={selectedCategory ? selectedCategory.toString() : ''}
       disabled={hasError}
     />
