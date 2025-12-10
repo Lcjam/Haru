@@ -109,12 +109,20 @@ export const useCategories = () => {
     initializeData();
   }, []);
 
+  // 재시도 함수 추가
+  const retry = () => {
+    dispatch(setError(null));
+    categoryErrorRef.current = null;
+    fetchCategories();
+  };
+
   return {
     categories,
     selectedCategoryId,
     loading,
     error,
     constantCategories,
-    constantHobbies
+    constantHobbies,
+    retry
   };
 };

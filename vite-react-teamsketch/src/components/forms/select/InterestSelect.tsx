@@ -1,5 +1,6 @@
 import Select from '../../common/Select';
 import { useAppSelector } from '../../../store/hooks';
+import { useCategories } from '../../../hooks/useCategories';
 
 interface InterestSelectProps {
   onInterestSelect: (categoryId: number) => void;
@@ -12,6 +13,7 @@ interface InterestSelectProps {
 
 const InterestSelect: React.FC<InterestSelectProps> = ({ onInterestSelect, selectedCategory }) => {
   const { categories, loading, error } = useAppSelector((state) => state.category);
+  const { retry } = useCategories();
   
   // 디버깅용 로그
   console.log('InterestSelect - categories:', categories);
@@ -45,25 +47,38 @@ const InterestSelect: React.FC<InterestSelectProps> = ({ onInterestSelect, selec
   const hasError = error && categories.length === 0;
 
   return (
-    <Select
-      options={categories.map((category) => ({
-        value: category.categoryId.toString(),
-        label: category.categoryName
-      }))}
-      onChange={handleCategorySelect}
-      className="w-full bg-primary-300 text-text-light dark:bg-gray-800"
-      placeholder={
-        hasError 
-          ? error.length > 30 
-            ? `${error.substring(0, 30)}...` 
-            : error
-          : categories.length === 0 
-            ? "로딩 중..." 
-            : "관심사를 선택해주세요"
-      }
-      value={selectedCategory ? selectedCategory.toString() : ''}
-      disabled={hasError}
-    />
+    <div className="w-full">
+      <Select
+        options={categories.map((category) => ({
+          value: category.categoryId.toString(),
+          label: category.categoryName
+        }))}
+        onChange={handleCategorySelect}
+        className="w-full bg-primary-300 text-text-light dark:bg-gray-800"
+        placeholder={
+          hasError 
+            ? error.length > 40 
+              ? `${error.substring(0, 40)}...` 
+              : error
+            : categories.length === 0 
+              ? "로딩 중..." 
+              : "관심사를 선택해주세요"
+        }
+        value={selectedCategory ? selectedCategory.toString() : ''}
+        disabled={hasError}
+      />
+      {hasError && (
+        <button
+          type="button"
+          onClick={() => {
+            retry();
+          }}
+          className="mt-1 text-xs text-primary-500 hover:text-primary-700 underline"
+        >
+          재시도
+        </button>
+      )}
+    </div>
   );
 };
 
