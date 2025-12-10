@@ -240,6 +240,20 @@ CREATE TABLE IF NOT EXISTS UnreadNotices (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ============================================
+-- 활동(마일리지,도파민) 테이블
+-- ============================================
+
+-- 활동(마일리지,도파민) 테이블
+CREATE TABLE IF NOT EXISTS PointsDopamineActivity (
+    points_activity_id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    points INT NOT NULL,
+    dopamine INT NOT NULL,
+    point_dopamine_activity_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    email VARCHAR(255) NOT NULL,
+    FOREIGN KEY (email) REFERENCES Users(email) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============================================
 -- 초기 데이터 삽입 (선택사항)
 -- ============================================
 
