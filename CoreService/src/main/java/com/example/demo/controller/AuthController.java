@@ -7,12 +7,14 @@ import com.example.demo.service.UserService;
 import com.example.demo.util.BaseResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/core/auth")
 @RequiredArgsConstructor
+@Slf4j
 public class AuthController {
 
     private final UserService userService;
@@ -89,8 +91,7 @@ public class AuthController {
     public ResponseEntity<PasswordChangeResponse> changePassword(
 
             @RequestBody PasswordChangeRequest request) {
-        System.out.println("/me/password/notoken에 접근했습니다.");
-        System.out.println(request);
+        log.debug("/me/password/notoken에 접근했습니다. 요청: {}", request);
         PasswordChangeResponse response = userService.changePassword(request);
 
         if (!response.isSuccess()) {

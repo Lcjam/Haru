@@ -43,7 +43,7 @@ public class JwtAuthenticationFilter extends AbstractGatewayFilterFactory<JwtAut
     @Override
     public GatewayFilter apply(Config config) {
         return (exchange, chain) -> {
-            System.out.println("JwtAuthenticationFilter 실행");
+            // JWT 필터 실행 (디버그 로그는 제거)
             ServerHttpRequest request = exchange.getRequest();
             String path = request.getPath().value();
 
@@ -79,7 +79,17 @@ public class JwtAuthenticationFilter extends AbstractGatewayFilterFactory<JwtAut
 
     private boolean isPublicPath(String path) {
         return PUBLIC_PATHS.stream()
-                .anyMatch(p -> p.endsWith("**") ? path.startsWith(p.substring(0, p.length() - 2)) : path.equals(p));
+                .anyMatch(p -> {
+                    if (p.endsWith("/**")) {
+                        String basePath = p.substring(0, p.length() - 3);
+                        return path.startsWith(basePath);
+                    } else if (p.endsWith("**")) {
+                        String basePath = p.substring(0, p.length() - 2);
+                        return path.startsWith(basePath);
+                    } else {
+                        return path.equals(p);
+                    }
+                });
     }
 
     private String extractToken(ServerHttpRequest request) {

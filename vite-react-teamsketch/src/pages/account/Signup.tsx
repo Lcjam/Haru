@@ -27,12 +27,16 @@ import { SignupForm, HobbiesRequest } from '../../types/auth';
 import HobbySelect from '../../components/forms/select/HobbySelect';
 import { useState } from 'react';
 import { toast } from 'react-toastify';
+import { useCategories } from '../../hooks/useCategories';
 
 const Signup = () => {
   const signupMutation = useSignup();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { formData, validationErrors } = useAppSelector((state) => state.signup);
+  
+  // 카테고리와 취미 데이터 로드
+  useCategories();
 
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [selectedHobbies, setSelectedHobbies] = useState<HobbiesRequest[]>([]);
@@ -125,8 +129,26 @@ const Signup = () => {
       navigate('/login');
     } catch (error: any) {
       // AxiosError에서 서버 응답 메시지 추출
-      const errorMessage = error.response?.data?.data?.message || 
-                          (error instanceof Error ? error.message : '회원가입 중 오류가 발생했습니다.');
+      // BaseResponse 구조: { status, message, data: { success, message, ... } }
+      let errorMessage = '회원가입 중 오류가 발생했습니다.';
+      
+      if (error.response?.data) {
+        const responseData = error.response.data;
+        // BaseResponse의 message 필드 확인
+        if (responseData.message) {
+          errorMessage = responseData.message;
+        } 
+        // BaseResponse의 data 내부 message 확인
+        else if (responseData.data?.message) {
+          errorMessage = responseData.data.message;
+        }
+        // BaseResponse의 data가 SignupResponse인 경우
+        else if (responseData.data?.success === false && responseData.data?.message) {
+          errorMessage = responseData.data.message;
+        }
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
       
       toast.error(errorMessage);
       console.error('회원가입 에러:', error); // 에러 로깅

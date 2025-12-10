@@ -154,7 +154,12 @@ public class AuthService {
                 // 초기 도파민 수치(50)와 활동 포인트(0) 설정
                 int initialDopamine = 50;
                 int initialPoints = 0;
-                userMapper.initializeUserActivity(request.getEmail(), initialDopamine, initialPoints);
+                try {
+                    userMapper.initializeUserActivity(request.getEmail(), initialDopamine, initialPoints);
+                } catch (Exception e) {
+                    log.warn("포인트/도파민 초기화 실패 (테이블이 없을 수 있음): {}", e.getMessage());
+                    // 포인트/도파민 초기화 실패해도 회원가입은 성공으로 처리
+                }
 
                 // 취미 정보가 있다면 등록
                 if (request.getHobbies() != null && !request.getHobbies().isEmpty()) {

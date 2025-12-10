@@ -9,14 +9,16 @@ import org.springframework.web.multipart.MultipartFile;
 import com.example.demo.dto.CommonResponseDTO;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @RestController
 @RequiredArgsConstructor
+@Slf4j
 @RequestMapping("/api/assist/upload")
 public class UploadProfileController {
     @PostMapping("/profile")
     public ResponseEntity<CommonResponseDTO> uploadProfile(@RequestPart("file") MultipartFile file) {
-        System.out.println("Profile uploaded successfully");
+        log.info("Profile uploaded successfully");
         return ResponseEntity.ok(CommonResponseDTO.builder()
                 .status("success")
                 .data(new CommonResponseDTO.Data("Profile uploaded successfully", ""))

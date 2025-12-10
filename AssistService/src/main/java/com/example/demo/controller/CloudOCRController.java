@@ -2,6 +2,7 @@ package com.example.demo.controller;
 
 import com.example.demo.serviceimpl.CloudOCRServiceImpl;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -9,6 +10,7 @@ import com.example.demo.dto.CommonResponseDTO;
 
 @RestController
 @RequiredArgsConstructor
+@Slf4j
 @RequestMapping("/api/assist/cloudocr")
 public class CloudOCRController {
 
@@ -17,7 +19,7 @@ public class CloudOCRController {
     @PostMapping("/process")
     public ResponseEntity<CommonResponseDTO<String>> processImage(
             @RequestParam("file") MultipartFile file) {
-        System.out.println("CloudOCRController processImage");
+        log.debug("CloudOCRController processImage");
         try {
             String result = cloudOCRServiceImpl.processImage(file);
             return ResponseEntity.ok(CommonResponseDTO.<String>builder()
