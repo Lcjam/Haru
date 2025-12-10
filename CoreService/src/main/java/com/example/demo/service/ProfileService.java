@@ -287,8 +287,7 @@ public class ProfileService {
             }
         } else { // if문이 성공했으니 여기는 건너뜁니다다
             String verifyPhoneNumber = userMapper.findByEmail(request.getEmail()).getPhoneNumber().trim();
-            System.out.println(
-                    "VerifyPhoneNumber: " + verifyPhoneNumber + "\n" + "getPhoneNumber:" + request.getPhoneNumber());
+            log.debug("전화번호 검증 - DB: {}, 요청: {}", verifyPhoneNumber, request.getPhoneNumber());
             if (!verifyPhoneNumber.equals(request.getPhoneNumber())) {
                 return PasswordChangeResponse.builder()
                         .success(false)

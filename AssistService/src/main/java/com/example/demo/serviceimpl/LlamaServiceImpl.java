@@ -1,6 +1,7 @@
 package com.example.demo.serviceimpl;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import java.io.*;
 import java.net.HttpURLConnection;
@@ -16,6 +17,7 @@ import com.example.demo.model.ChatMessage;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class LlamaServiceImpl {
     private final CloudChatBotServiceImpl cloudChatBotServiceImpl;
     private final ChatMessageDAO chatMessageDAO;
@@ -29,10 +31,10 @@ public class LlamaServiceImpl {
             : "http://localhost:8080";
 
     private String translate(String text, String sourceLang, String targetLang) {
-        System.out.println("gatewayUri: " + gatewayUri);
-        System.out.println("=== 번역 시작 ===");
-        System.out.println(String.format("%s -> %s 번역", sourceLang, targetLang));
-        System.out.println("번역할 텍스트: " + text);
+        log.debug("gatewayUri: {}", gatewayUri);
+        log.debug("=== 번역 시작 ===");
+        log.debug("{} -> {} 번역", sourceLang, targetLang);
+        log.debug("번역할 텍스트: {}", text);
         
         try {
             if (text.length() <= 500) {
@@ -69,9 +71,8 @@ public class LlamaServiceImpl {
             return translatedText.toString().trim();
 
         } catch (Exception e) {
-            System.out.println("=== 번역 에러 발생 ===");
-            System.out.println("번역 에러: " + e.getMessage());
-            e.printStackTrace();
+            log.error("=== 번역 에러 발생 ===", e);
+            log.error("번역 에러: {}", e.getMessage());
             return text;
         }
     }
@@ -117,9 +118,9 @@ public class LlamaServiceImpl {
     }
 
     public String chat(String message, String sessionId, List<ChatMessage> history) {
-        System.out.println("=== LlamaService 채팅 요청 시작 ===");
-        System.out.println("받은 메시지: " + message);
-        System.out.println("히스토리 크기: " + history.size());
+        log.debug("=== LlamaService 채팅 요청 시작 ===");
+        log.debug("받은 메시지: {}", message);
+        log.debug("히스토리 크기: {}", history.size());
         
         String response = null;
         
@@ -127,14 +128,14 @@ public class LlamaServiceImpl {
             // CloudChatBot 먼저 시도            
             try {
                 response = cloudChatBotServiceImpl.getResponse(message).trim();
-                System.out.println("CloudChatBot 응답: " + response);
+                log.debug("CloudChatBot 응답: {}", response);
                 if (response != null && !response.trim().isEmpty() && !response.equals("false")) {
                     // CloudChatBot 응답이 성공적으로 왔을 때 DB에 저장
                     saveChat(message, response, sessionId);
                     return response;
                 }
             } catch (Exception e) {
-                System.err.println("CloudChatBot 서비스 호출 실패, Llama 서비스로 전환: " + e.getMessage());
+                log.warn("CloudChatBot 서비스 호출 실패, Llama 서비스로 전환: {}", e.getMessage());
                 // CloudChatBot 실패 시 계속 진행 (Llama 사용)
             }
 
@@ -169,8 +170,7 @@ public class LlamaServiceImpl {
             
             return response;
         } catch (Exception e) {
-            System.err.println("Chat 처리 중 에러 발생: " + e.getMessage());
-            e.printStackTrace();
+            log.error("Chat 처리 중 에러 발생: {}", e.getMessage(), e);
             return "죄송합니다. 서비스 오류가 발생했습니다: " + e.getMessage();
         }
     }
@@ -197,8 +197,7 @@ public class LlamaServiceImpl {
             assistantChatMessage.setContent(assistantResponse);
             chatMessageDAO.saveMessage(assistantChatMessage);
         } catch (Exception e) {
-            e.printStackTrace();
-            System.err.println("채팅 저장 중 오류 발생: " + e.getMessage());
+            log.error("채팅 저장 중 오류 발생: {}", e.getMessage(), e);
         }
     }
 
@@ -217,7 +216,7 @@ public class LlamaServiceImpl {
            
 
             String jsonInputString = objectMapper.writeValueAsString(requestBody);
-            System.out.println("Python 서버로 보내는 데이터: " + jsonInputString);
+            log.debug("Python 서버로 보내는 데이터: {}", jsonInputString);
             
             try (OutputStreamWriter writer = new OutputStreamWriter(conn.getOutputStream())) {
                 writer.write(jsonInputString);
@@ -231,7 +230,7 @@ public class LlamaServiceImpl {
                     while ((line = br.readLine()) != null) {
                         errorResponse.append(line);
                     }
-                    System.out.println("Python 서버 에러 응답: " + errorResponse.toString());
+                    log.error("Python 서버 에러 응답: {}", errorResponse.toString());
                     return "An error occurred while processing your request.";
                 }
             }
@@ -249,14 +248,13 @@ public class LlamaServiceImpl {
             // JSON 응답 파싱
             JsonNode jsonResponse = objectMapper.readTree(response.toString());
             String englishResponse = jsonResponse.get("response").asText();
-            System.out.println("영어 응답: " + englishResponse);
+            log.debug("영어 응답: {}", englishResponse);
 
             return englishResponse;  // 영어 응답만 반환
             
         } catch (Exception e) {
-            System.out.println("=== LlamaService 에러 발생 ===");
-            System.out.println("에러 메시지: " + e.getMessage());
-            e.printStackTrace();
+            log.error("=== LlamaService 에러 발생 ===", e);
+            log.error("에러 메시지: {}", e.getMessage());
             return "죄송합니다. 서비스 오류가 발생했습니다: " + e.getMessage();
         }
     }
