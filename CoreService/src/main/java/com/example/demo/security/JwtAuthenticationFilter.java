@@ -68,9 +68,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         // 공개 경로인 경우 필터링 제외
         boolean isPublic = PUBLIC_PATHS.stream().anyMatch(p -> pathMatcher.match(p, path));
         if (isPublic) {
-            log.debug("공개 경로로 필터링 제외: {}", path);
+            log.info("✅ 공개 경로로 필터링 제외: {}", path);
         } else {
-            log.debug("인증 필요 경로: {}", path);
+            log.info("🔒 인증 필요 경로: {}", path);
         }
         return isPublic;
     }
@@ -85,7 +85,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String path = request.getRequestURI();
 
         // 로깅 추가
-        log.debug("Received request to path: {}", path);
+        log.info("JwtAuthenticationFilter 실행 - 경로: {}, 토큰 존재: {}", path, token != null);
 
         if (token != null) {
             try {
