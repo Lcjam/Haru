@@ -27,12 +27,16 @@ import { SignupForm, HobbiesRequest } from '../../types/auth';
 import HobbySelect from '../../components/forms/select/HobbySelect';
 import { useState } from 'react';
 import { toast } from 'react-toastify';
+import { useCategories } from '../../hooks/useCategories';
 
 const Signup = () => {
   const signupMutation = useSignup();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { formData, validationErrors } = useAppSelector((state) => state.signup);
+  
+  // 카테고리와 취미 데이터 로드
+  useCategories();
 
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [selectedHobbies, setSelectedHobbies] = useState<HobbiesRequest[]>([]);
