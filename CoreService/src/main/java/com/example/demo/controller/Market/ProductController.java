@@ -10,6 +10,13 @@ import com.example.demo.service.Market.ProductService;
 import com.example.demo.mapper.Market.ProductImageMapper;
 import com.example.demo.util.BaseResponse;
 import com.example.demo.security.JwtTokenProvider;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -32,18 +39,37 @@ import org.slf4j.LoggerFactory;
 @RestController
 @RequestMapping("/api/core/market/products")
 @RequiredArgsConstructor
+@Tag(name = "상품", description = "마켓플레이스 상품 관련 API (상품 등록, 조회, 수정, 삭제 등)")
 public class ProductController {
     private final ProductService productService;
     private final JwtTokenProvider jwtTokenProvider;
     private final ProductImageMapper productImageMapper;
     private static final Logger log = LoggerFactory.getLogger(ProductController.class);
 
-    /** 상품 등록 (구매/판매) - 이미지 업로드 포함 **/
+    @Operation(
+            summary = "상품 등록",
+            description = "구매 또는 판매 상품을 등록합니다. 상품 정보와 이미지 파일을 업로드할 수 있습니다. 인증이 필요합니다."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "상품 등록 성공",
+                    content = @Content(schema = @Schema(implementation = BaseResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "상품 등록 실패 (유효성 검증 실패 등)",
+                    content = @Content(schema = @Schema(implementation = BaseResponse.class))
+            )
+    })
     @PostMapping(value = "/registers", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
     public ResponseEntity<BaseResponse<ProductResponse>> createProduct(
+            @Parameter(description = "JWT 토큰 (Bearer {token} 형식)", required = true)
             @RequestHeader("Authorization") String token,
-            @RequestPart("request") ProductRequest request,  // 상품 정보 JSON
-            @RequestPart(value = "images", required = false) List<MultipartFile> images) {  // 이미지 파일
+            @Parameter(description = "상품 정보 (JSON)", required = true)
+            @RequestPart("request") ProductRequest request,
+            @Parameter(description = "상품 이미지 파일들 (선택사항)")
+            @RequestPart(value = "images", required = false) List<MultipartFile> images) {
 
         String email = jwtTokenProvider.getUsername(token);
         return productService.createProduct(email, request, images);
