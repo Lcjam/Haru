@@ -12,7 +12,7 @@ interface InterestSelectProps {
 
 const InterestSelect: React.FC<InterestSelectProps> = ({ onInterestSelect, selectedCategory }) => {
   const { categories, loading, error } = useAppSelector((state) => state.category);
-  
+
   const handleCategorySelect = (value: string) => {
     onInterestSelect(Number(value));
   };
@@ -43,16 +43,16 @@ const InterestSelect: React.FC<InterestSelectProps> = ({ onInterestSelect, selec
       onChange={handleCategorySelect}
       className="w-full bg-primary-300 text-text-light dark:bg-gray-800"
       placeholder={
-        hasError 
-          ? error.length > 40 
-            ? `${error.substring(0, 40)}...` 
+        hasError
+          ? error.length > 40
+            ? `${error.substring(0, 40)}...`
             : error
-          : categories.length === 0 
-            ? "로딩 중..." 
+          : categories.length === 0
+            ? "로딩 중..."
             : "관심사를 선택해주세요"
       }
       value={selectedCategory ? selectedCategory.toString() : ''}
-      disabled={hasError}
+      disabled={!!hasError}
     />
   );
 };
