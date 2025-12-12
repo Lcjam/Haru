@@ -24,6 +24,8 @@ dist-ssr
 *.sw?
 *.sql
 *.md
+# 백엔드 개선 문서는 로컬에서만 관리
+BACKEND_IMPROVEMENTS.md
 /Postman/*
 
 # Environment variables

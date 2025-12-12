@@ -8,6 +8,13 @@ import com.example.demo.mapper.board.PostReactionMapper;
 import com.example.demo.model.board.PostReaction;
 import com.example.demo.service.PostReactionService;
 import com.example.demo.util.TokenUtils;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Tag(name = "게시글 반응 관리", description = "게시글 좋아요 및 반응 추가, 조회, 삭제 관련 API")
 @RestController
 @RequestMapping("/api/core/boards")
 @RequiredArgsConstructor
@@ -28,13 +36,34 @@ public class PostReactionController {
     private final PostReactionMapper postReactionMapper;
     private final PostMapper postMapper;
 
-    /**
-     * 게시글 반응 추가/변경
-     */
+    @Operation(
+            summary = "게시글 반응 추가/변경",
+            description = "게시글에 반응(좋아요, 싫어요 등)을 추가하거나 변경합니다. JWT 토큰이 필요합니다."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "반응 추가/변경 성공",
+                    content = @Content(schema = @Schema(implementation = BaseResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "반응 추가/변경 실패 (게시글이 없음, 유효하지 않은 반응 타입 등)",
+                    content = @Content(schema = @Schema(implementation = BaseResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패 (유효하지 않은 토큰)",
+                    content = @Content(schema = @Schema(implementation = BaseResponse.class))
+            )
+    })
     @PostMapping("/posts/{postId}/reactions")
     public ResponseEntity<BaseResponse<?>> addReaction(
+            @Parameter(description = "JWT 토큰 (Bearer {token} 형식)", required = true)
             @RequestHeader("Authorization") String token,
+            @Parameter(description = "게시글 ID", required = true, example = "1")
             @PathVariable Long postId,
+            @Parameter(description = "반응 요청 정보 (reactionType 필드 포함)", required = true)
             @RequestBody Map<String, String> request) {
 
         String email = tokenUtils.getEmailFromAuthHeader(token);
@@ -96,12 +125,32 @@ public class PostReactionController {
         }
     }
 
-    /**
-     * 게시글 반응 삭제
-     */
+    @Operation(
+            summary = "게시글 반응 삭제",
+            description = "게시글에 추가한 반응을 삭제합니다. JWT 토큰이 필요합니다."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "반응 삭제 성공",
+                    content = @Content(schema = @Schema(implementation = BaseResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "반응 삭제 실패 (반응이 없음 등)",
+                    content = @Content(schema = @Schema(implementation = BaseResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패 (유효하지 않은 토큰)",
+                    content = @Content(schema = @Schema(implementation = BaseResponse.class))
+            )
+    })
     @DeleteMapping("/posts/{postId}/reactions")
     public ResponseEntity<BaseResponse<?>> deleteReaction(
+            @Parameter(description = "JWT 토큰 (Bearer {token} 형식)", required = true)
             @RequestHeader("Authorization") String token,
+            @Parameter(description = "게시글 ID", required = true, example = "1")
             @PathVariable Long postId) {
 
         String email = tokenUtils.getEmailFromAuthHeader(token);
@@ -138,12 +187,32 @@ public class PostReactionController {
         }
     }
 
-    /**
-     * 게시글 반응 조회 (사용자의 반응 및 전체 반응 통계)
-     */
+    @Operation(
+            summary = "게시글 반응 조회",
+            description = "게시글의 반응 통계 및 사용자의 반응을 조회합니다. JWT 토큰이 필요합니다."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "반응 조회 성공",
+                    content = @Content(schema = @Schema(implementation = BaseResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "반응 조회 실패 (게시글이 없음 등)",
+                    content = @Content(schema = @Schema(implementation = BaseResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패 (유효하지 않은 토큰)",
+                    content = @Content(schema = @Schema(implementation = BaseResponse.class))
+            )
+    })
     @GetMapping("/posts/{postId}/reactions")
     public ResponseEntity<BaseResponse<?>> getPostReaction(
+            @Parameter(description = "JWT 토큰 (Bearer {token} 형식)", required = true)
             @RequestHeader("Authorization") String token,
+            @Parameter(description = "게시글 ID", required = true, example = "1")
             @PathVariable Long postId) {
         
         String email = tokenUtils.getEmailFromAuthHeader(token);
@@ -164,12 +233,32 @@ public class PostReactionController {
         }
     }
 
-    /**
-     * 게시글 반응 목록 조회
-     */
+    @Operation(
+            summary = "게시글 반응 목록 조회",
+            description = "게시글에 반응한 사용자 목록을 조회합니다. JWT 토큰이 필요합니다."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "반응 목록 조회 성공",
+                    content = @Content(schema = @Schema(implementation = BaseResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "반응 목록 조회 실패 (게시글이 없음 등)",
+                    content = @Content(schema = @Schema(implementation = BaseResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패 (유효하지 않은 토큰)",
+                    content = @Content(schema = @Schema(implementation = BaseResponse.class))
+            )
+    })
     @GetMapping("/posts/{postId}/reactions/list")
     public ResponseEntity<BaseResponse<?>> getPostReactions(
+            @Parameter(description = "JWT 토큰 (Bearer {token} 형식)", required = true)
             @RequestHeader("Authorization") String token,
+            @Parameter(description = "게시글 ID", required = true, example = "1")
             @PathVariable Long postId) {
         
         String email = tokenUtils.getEmailFromAuthHeader(token);
@@ -190,9 +279,32 @@ public class PostReactionController {
         }
     }
 
+    @Operation(
+            summary = "게시글 좋아요 토글",
+            description = "게시글의 좋아요를 추가하거나 취소합니다. JWT 토큰이 필요합니다."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "좋아요 토글 성공",
+                    content = @Content(schema = @Schema(implementation = BaseResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "좋아요 토글 실패 (게시글이 없음 등)",
+                    content = @Content(schema = @Schema(implementation = BaseResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패 (유효하지 않은 토큰)",
+                    content = @Content(schema = @Schema(implementation = BaseResponse.class))
+            )
+    })
     @PostMapping("/{postId}/like")
     public ResponseEntity<BaseResponse<?>> toggleLike(
+            @Parameter(description = "JWT 토큰 (Bearer {token} 형식)", required = true)
             @RequestHeader("Authorization") String token,
+            @Parameter(description = "게시글 ID", required = true, example = "1")
             @PathVariable Long postId) {
 
         String email = tokenUtils.getEmailFromAuthHeader(token);

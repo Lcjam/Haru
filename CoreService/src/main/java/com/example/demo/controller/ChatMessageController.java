@@ -12,6 +12,13 @@ import com.example.demo.service.ChatMessageService;
 import com.example.demo.service.NotificationService;
 import com.example.demo.service.UserService;
 import com.example.demo.util.TokenUtils;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
@@ -25,6 +32,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.security.Principal;
 
+@Tag(name = "채팅 메시지 관리", description = "채팅 메시지 전송, 조회 및 읽음 상태 업데이트 관련 API")
 @RestController
 @RequestMapping("/api/core/chat")
 @RequiredArgsConstructor
@@ -110,13 +118,32 @@ public class ChatMessageController {
         }
     }
 
-    /**
-     * REST API를 통한 메시지 전송
-     * JWT 토큰으로 인증된 사용자의 HTTP 요청을 처리합니다.
-     */
+    @Operation(
+            summary = "채팅 메시지 전송 (REST API)",
+            description = "REST API를 통해 채팅 메시지를 전송합니다. JWT 토큰이 필요합니다."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "메시지 전송 성공",
+                    content = @Content(schema = @Schema(implementation = BaseResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "메시지 전송 실패 (채팅방이 없음, 권한 없음 등)",
+                    content = @Content(schema = @Schema(implementation = BaseResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패 (유효하지 않은 토큰)",
+                    content = @Content(schema = @Schema(implementation = BaseResponse.class))
+            )
+    })
     @PostMapping("/messages")
     public ResponseEntity<BaseResponse<?>> sendMessage(
+            @Parameter(description = "JWT 토큰 (Bearer {token} 형식)", required = true)
             @RequestHeader("Authorization") String token,
+            @Parameter(description = "메시지 전송 요청 정보", required = true)
             @RequestBody ChatMessageRequest request) {
         
         String tokenWithoutBearer = tokenUtils.extractTokenWithoutBearer(token);
@@ -139,14 +166,36 @@ public class ChatMessageController {
         }
     }
 
-    /**
-     * 채팅방 메시지 목록 조회
-     */
+    @Operation(
+            summary = "채팅방 메시지 목록 조회",
+            description = "채팅방의 메시지 목록을 조회합니다. 페이징을 지원합니다. JWT 토큰이 필요합니다."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "메시지 목록 조회 성공",
+                    content = @Content(schema = @Schema(implementation = BaseResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "메시지 목록 조회 실패 (채팅방이 없음, 권한 없음 등)",
+                    content = @Content(schema = @Schema(implementation = BaseResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패 (유효하지 않은 토큰)",
+                    content = @Content(schema = @Schema(implementation = BaseResponse.class))
+            )
+    })
     @GetMapping("/rooms/{chatroomId}/messages")
     public ResponseEntity<BaseResponse<?>> getChatMessages(
+            @Parameter(description = "JWT 토큰 (Bearer {token} 형식)", required = true)
             @RequestHeader("Authorization") String token,
+            @Parameter(description = "채팅방 ID", required = true, example = "1")
             @PathVariable Integer chatroomId,
+            @Parameter(description = "페이지 번호 (선택사항)", example = "0")
             @RequestParam(required = false) Integer page,
+            @Parameter(description = "페이지 크기 (선택사항)", example = "20")
             @RequestParam(required = false) Integer size) {
         
         String tokenWithoutBearer = tokenUtils.extractTokenWithoutBearer(token);
@@ -165,12 +214,32 @@ public class ChatMessageController {
         return ResponseEntity.ok(BaseResponse.success(response));
     }
     
-    /**
-     * 메시지 읽음 상태 업데이트
-     */
+    @Operation(
+            summary = "메시지 읽음 상태 업데이트",
+            description = "채팅방의 모든 메시지를 읽음 상태로 표시합니다. JWT 토큰이 필요합니다."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "읽음 상태 업데이트 성공",
+                    content = @Content(schema = @Schema(implementation = BaseResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "읽음 상태 업데이트 실패 (채팅방이 없음, 권한 없음 등)",
+                    content = @Content(schema = @Schema(implementation = BaseResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패 (유효하지 않은 토큰)",
+                    content = @Content(schema = @Schema(implementation = BaseResponse.class))
+            )
+    })
     @PutMapping("/rooms/{chatroomId}/messages/read")
     public ResponseEntity<BaseResponse<?>> markMessagesAsRead(
+            @Parameter(description = "JWT 토큰 (Bearer {token} 형식)", required = true)
             @RequestHeader("Authorization") String token,
+            @Parameter(description = "채팅방 ID", required = true, example = "1")
             @PathVariable Integer chatroomId) {
         
         String tokenWithoutBearer = tokenUtils.extractTokenWithoutBearer(token);
@@ -197,13 +266,34 @@ public class ChatMessageController {
         }
     }
 
-    /**
-     * 이미지 메시지 전송 (REST)
-     */
+    @Operation(
+            summary = "이미지 메시지 전송",
+            description = "채팅방에 이미지 메시지를 전송합니다. JWT 토큰이 필요합니다."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "이미지 메시지 전송 성공",
+                    content = @Content(schema = @Schema(implementation = BaseResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "이미지 메시지 전송 실패 (이미지 파일 없음, 채팅방이 없음 등)",
+                    content = @Content(schema = @Schema(implementation = BaseResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패 (유효하지 않은 토큰)",
+                    content = @Content(schema = @Schema(implementation = BaseResponse.class))
+            )
+    })
     @PostMapping(value = "/messages/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<BaseResponse<?>> sendImageMessage(
+            @Parameter(description = "JWT 토큰 (Bearer {token} 형식)", required = true)
             @RequestHeader("Authorization") String token,
+            @Parameter(description = "채팅방 ID", required = true, example = "1")
             @RequestParam("chatroomId") Integer chatroomId,
+            @Parameter(description = "이미지 파일", required = true)
             @RequestParam("image") MultipartFile image) {
         
         String tokenWithoutBearer = tokenUtils.extractTokenWithoutBearer(token);
