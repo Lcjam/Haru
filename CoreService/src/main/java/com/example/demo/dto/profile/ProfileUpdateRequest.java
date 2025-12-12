@@ -1,6 +1,7 @@
 package com.example.demo.dto.profile;
 
 import com.example.demo.dto.hobby.HobbyRequest;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -8,16 +9,21 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 
+@Schema(description = "프로필 수정 요청 정보")
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class ProfileUpdateRequest {
-    // 수정 가능한 필드들로 제한
-    private String name;         // 이름 변경 가능
-    private String nickname;     // 닉네임 변경 가능
-    private String bio;          // 소개글 변경 가능
-    private List<HobbyRequest> hobbies; // 취미/카테고리 변경 가능
+    @Schema(description = "이름", example = "홍길동")
+    private String name;
     
-    // 이메일과 전화번호는 변경 불가능하므로 필드에서 제외됨
+    @Schema(description = "닉네임", example = "홍길동123")
+    private String nickname;
+    
+    @Schema(description = "자기소개", example = "안녕하세요!")
+    private String bio;
+    
+    @Schema(description = "취미 목록")
+    private List<HobbyRequest> hobbies;
 }
