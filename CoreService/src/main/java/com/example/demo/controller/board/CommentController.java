@@ -5,7 +5,6 @@ import com.example.demo.dto.board.CommentResponse;
 import com.example.demo.dto.board.CommentUpdateRequest;
 import com.example.demo.service.CommentService;
 import com.example.demo.util.BaseResponse;
-import com.example.demo.util.TokenUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -16,6 +15,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -28,7 +28,6 @@ import java.util.List;
 public class CommentController {
 
     private final CommentService commentService;
-    private final TokenUtils tokenUtils;
 
     @Operation(
             summary = "댓글 생성",
@@ -53,19 +52,14 @@ public class CommentController {
     })
     @PostMapping("/posts/{postId}/comments")
     public ResponseEntity<BaseResponse<?>> createComment(
-            @Parameter(description = "JWT 토큰 (Bearer {token} 형식)", required = true)
-            @RequestHeader("Authorization") String token,
+            Authentication authentication,
             @Parameter(description = "게시글 ID", required = true, example = "1")
             @PathVariable Long postId,
             @Parameter(description = "댓글 작성 요청 정보", required = true)
             @RequestBody CommentCreateRequest request) {
-        
-        String email = tokenUtils.getEmailFromAuthHeader(token);
-        
-        if (email == null) {
-            return ResponseEntity.status(401).body(BaseResponse.error("인증되지 않은 요청입니다.", "401"));
-        }
-        
+
+        String email = authentication.getName();
+
         try {
             // postId 설정
             request.setPostId(postId);
@@ -104,21 +98,16 @@ public class CommentController {
     })
     @PostMapping("/posts/{postId}/comments/{commentId}/replies")
     public ResponseEntity<BaseResponse<?>> createReply(
-            @Parameter(description = "JWT 토큰 (Bearer {token} 형식)", required = true)
-            @RequestHeader("Authorization") String token,
+            Authentication authentication,
             @Parameter(description = "게시글 ID", required = true, example = "1")
             @PathVariable Long postId,
             @Parameter(description = "댓글 ID", required = true, example = "1")
             @PathVariable Long commentId,
             @Parameter(description = "대댓글 작성 요청 정보", required = true)
             @RequestBody CommentCreateRequest request) {
-        
-        String email = tokenUtils.getEmailFromAuthHeader(token);
-        
-        if (email == null) {
-            return ResponseEntity.status(401).body(BaseResponse.error("인증되지 않은 요청입니다.", "401"));
-        }
-        
+
+        String email = authentication.getName();
+
         try {
             // postId와 parentId 설정
             request.setPostId(postId);
@@ -158,21 +147,16 @@ public class CommentController {
     })
     @PutMapping("/posts/{postId}/comments/{commentId}")
     public ResponseEntity<BaseResponse<?>> updateComment(
-            @Parameter(description = "JWT 토큰 (Bearer {token} 형식)", required = true)
-            @RequestHeader("Authorization") String token,
+            Authentication authentication,
             @Parameter(description = "게시글 ID", required = true, example = "1")
             @PathVariable Long postId,
             @Parameter(description = "댓글 ID", required = true, example = "1")
             @PathVariable Long commentId,
             @Parameter(description = "댓글 수정 요청 정보", required = true)
             @RequestBody CommentUpdateRequest request) {
-        
-        String email = tokenUtils.getEmailFromAuthHeader(token);
-        
-        if (email == null) {
-            return ResponseEntity.status(401).body(BaseResponse.error("인증되지 않은 요청입니다.", "401"));
-        }
-        
+
+        String email = authentication.getName();
+
         try {
             CommentResponse response = commentService.updateComment(email, commentId, request);
             return ResponseEntity.ok(BaseResponse.success(response));
@@ -208,19 +192,14 @@ public class CommentController {
     })
     @DeleteMapping("/posts/{postId}/comments/{commentId}")
     public ResponseEntity<BaseResponse<String>> deleteComment(
-            @Parameter(description = "JWT 토큰 (Bearer {token} 형식)", required = true)
-            @RequestHeader("Authorization") String token,
+            Authentication authentication,
             @Parameter(description = "게시글 ID", required = true, example = "1")
             @PathVariable Long postId,
             @Parameter(description = "댓글 ID", required = true, example = "1")
             @PathVariable Long commentId) {
-        
-        String email = tokenUtils.getEmailFromAuthHeader(token);
-        
-        if (email == null) {
-            return ResponseEntity.status(401).body(BaseResponse.error("인증되지 않은 요청입니다.", "401"));
-        }
-        
+
+        String email = authentication.getName();
+
         try {
             commentService.deleteComment(email, commentId);
             return ResponseEntity.ok(BaseResponse.success("댓글이 삭제되었습니다."));
@@ -256,17 +235,12 @@ public class CommentController {
     })
     @GetMapping("/posts/{postId}/comments")
     public ResponseEntity<BaseResponse<?>> getCommentsByPostId(
-            @Parameter(description = "JWT 토큰 (Bearer {token} 형식)", required = true)
-            @RequestHeader("Authorization") String token,
+            Authentication authentication,
             @Parameter(description = "게시글 ID", required = true, example = "1")
             @PathVariable Long postId) {
-        
-        String email = tokenUtils.getEmailFromAuthHeader(token);
-        
-        if (email == null) {
-            return ResponseEntity.status(401).body(BaseResponse.error("인증되지 않은 요청입니다.", "401"));
-        }
-        
+
+        String email = authentication.getName();
+
         try {
             List<CommentResponse> comments = commentService.getCommentsByPostId(email, postId);
             return ResponseEntity.ok(BaseResponse.success(comments));
@@ -302,19 +276,14 @@ public class CommentController {
     })
     @GetMapping("/posts/{postId}/comments/{commentId}/replies")
     public ResponseEntity<BaseResponse<?>> getRepliesByParentId(
-            @Parameter(description = "JWT 토큰 (Bearer {token} 형식)", required = true)
-            @RequestHeader("Authorization") String token,
+            Authentication authentication,
             @Parameter(description = "게시글 ID", required = true, example = "1")
             @PathVariable Long postId,
             @Parameter(description = "댓글 ID", required = true, example = "1")
             @PathVariable Long commentId) {
-        
-        String email = tokenUtils.getEmailFromAuthHeader(token);
-        
-        if (email == null) {
-            return ResponseEntity.status(401).body(BaseResponse.error("인증되지 않은 요청입니다.", "401"));
-        }
-        
+
+        String email = authentication.getName();
+
         try {
             List<CommentResponse> replies = commentService.getRepliesByParentId(email, commentId);
             return ResponseEntity.ok(BaseResponse.success(replies));

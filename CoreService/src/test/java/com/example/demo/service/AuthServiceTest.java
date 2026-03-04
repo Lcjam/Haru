@@ -8,7 +8,6 @@ import com.example.demo.dto.hobby.HobbyRequest;
 import com.example.demo.mapper.HobbyMapper;
 import com.example.demo.mapper.UserMapper;
 import com.example.demo.model.User;
-import com.example.demo.model.UserAccountInfo;
 import com.example.demo.security.JwtTokenBlacklistService;
 import com.example.demo.security.JwtTokenProvider;
 import com.example.demo.util.PasswordUtils;
@@ -94,12 +93,7 @@ class AuthServiceTest {
         hashResult.put("hashedPassword", "hashedPassword");
         when(passwordUtils.hashPassword(anyString(), any())).thenReturn(hashResult);
         when(userMapper.insertUser(any(User.class))).thenReturn(1);
-        when(userMapper.insertUserAccountInfo(any(UserAccountInfo.class))).thenReturn(1);
         when(userMapper.initializeUserActivity(anyString(), anyInt(), anyInt())).thenReturn(1);
-        when(hobbyService.isValidCategory(anyLong())).thenReturn(true);
-        when(hobbyService.isValidHobby(anyLong())).thenReturn(true);
-        when(hobbyService.getHobbyMapper()).thenReturn(hobbyMapper);
-        when(hobbyMapper.isHobbyInCategory(anyLong(), anyLong())).thenReturn(true);
 
         // when
         SignupResponse response = authService.registerUser(signupRequest);
@@ -108,7 +102,6 @@ class AuthServiceTest {
         assertThat(response.isSuccess()).isTrue();
         assertThat(response.getEmail()).isEqualTo("test@example.com");
         verify(userMapper, times(1)).insertUser(any(User.class));
-        verify(userMapper, times(1)).insertUserAccountInfo(any(UserAccountInfo.class));
         verify(passwordUtils, times(1)).hashPassword(anyString(), any());
     }
 
@@ -243,4 +236,3 @@ class AuthServiceTest {
         verify(jwtTokenProvider, never()).createToken(anyInt(), anyString(), anyList());
     }
 }
-

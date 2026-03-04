@@ -114,12 +114,14 @@ class CommentServiceTest {
         // given
         when(postMapper.getPostById(1L)).thenReturn(post);
         when(boardMapper.findBoardById(1L)).thenReturn(board);
-        when(boardMemberMapper.findBoardMemberByEmailAndBoardId("test@example.com", 1L))
-                .thenReturn(boardMember);
-        doNothing().when(commentMapper).createComment(any(Comment.class));
+        doAnswer(invocation -> {
+            Comment created = invocation.getArgument(0);
+            created.setId(1L);
+            return null;
+        }).when(commentMapper).createComment(any(Comment.class));
         when(commentMapper.countCommentsByPostId(1L)).thenReturn(1);
         doNothing().when(commentMapper).updatePostCommentCount(1L, 1);
-        when(commentMapper.getCommentById(anyLong())).thenReturn(comment);
+        when(commentMapper.getCommentById(1L)).thenReturn(comment);
 
         // when
         var result = commentService.createComment("test@example.com", commentCreateRequest);
@@ -149,6 +151,7 @@ class CommentServiceTest {
     @DisplayName("댓글 생성 실패 - 멤버가 아님")
     void createComment_Fail_NotMember() {
         // given
+        board.setHostEmail("host@example.com");
         when(postMapper.getPostById(1L)).thenReturn(post);
         when(boardMapper.findBoardById(1L)).thenReturn(board);
         when(boardMemberMapper.findBoardMemberByEmailAndBoardId("test@example.com", 1L))
@@ -165,6 +168,7 @@ class CommentServiceTest {
     @DisplayName("대댓글 생성 성공")
     void createReply_Success() {
         // given
+        board.setHostEmail("host@example.com");
         commentCreateRequest.setParentId(2L);
         Comment reply = Comment.builder()
                 .id(3L)
@@ -179,12 +183,16 @@ class CommentServiceTest {
         when(boardMemberMapper.findBoardMemberByEmailAndBoardId("test@example.com", 1L))
                 .thenReturn(boardMember);
         when(commentMapper.getCommentById(2L)).thenReturn(parentComment);
-        doNothing().when(commentMapper).createComment(any(Comment.class));
+        doAnswer(invocation -> {
+            Comment created = invocation.getArgument(0);
+            created.setId(3L);
+            return null;
+        }).when(commentMapper).createComment(any(Comment.class));
         when(commentMapper.countRepliesByParentId(2L)).thenReturn(1);
         doNothing().when(commentMapper).updateReplyCount(2L, 1);
         when(commentMapper.countCommentsByPostId(1L)).thenReturn(2);
         doNothing().when(commentMapper).updatePostCommentCount(1L, 2);
-        when(commentMapper.getCommentById(anyLong())).thenReturn(reply);
+        when(commentMapper.getCommentById(3L)).thenReturn(reply);
 
         // when
         var result = commentService.createComment("test@example.com", commentCreateRequest);
@@ -199,6 +207,7 @@ class CommentServiceTest {
     @DisplayName("대댓글 생성 실패 - 부모 댓글이 없음")
     void createReply_Fail_ParentNotFound() {
         // given
+        board.setHostEmail("host@example.com");
         commentCreateRequest.setParentId(999L);
         when(postMapper.getPostById(1L)).thenReturn(post);
         when(boardMapper.findBoardById(1L)).thenReturn(board);
@@ -221,9 +230,11 @@ class CommentServiceTest {
         doNothing().when(commentMapper).updateComment(any(Comment.class));
         Comment updatedComment = Comment.builder()
                 .id(1L)
+                .postId(1L)
+                .authorEmail("test@example.com")
                 .content("수정된 댓글")
                 .build();
-        when(commentMapper.getCommentById(1L)).thenReturn(updatedComment);
+        when(commentMapper.getCommentById(1L)).thenReturn(comment, updatedComment);
 
         // when
         var result = commentService.updateComment("test@example.com", 1L, commentUpdateRequest);
@@ -301,10 +312,7 @@ class CommentServiceTest {
         List<Comment> comments = Arrays.asList(comment);
         when(postMapper.getPostById(1L)).thenReturn(post);
         when(boardMapper.findBoardById(1L)).thenReturn(board);
-        when(boardMemberMapper.findBoardMemberByEmailAndBoardId("test@example.com", 1L))
-                .thenReturn(boardMember);
         when(commentMapper.getCommentsByPostId(1L)).thenReturn(comments);
-        when(commentMapper.getRepliesByParentId(1L)).thenReturn(Collections.emptyList());
 
         // when
         var result = commentService.getCommentsByPostId("test@example.com", 1L);
@@ -332,8 +340,6 @@ class CommentServiceTest {
         when(commentMapper.getCommentById(2L)).thenReturn(parentComment);
         when(postMapper.getPostById(1L)).thenReturn(post);
         when(boardMapper.findBoardById(1L)).thenReturn(board);
-        when(boardMemberMapper.findBoardMemberByEmailAndBoardId("test@example.com", 1L))
-                .thenReturn(boardMember);
         when(commentMapper.getRepliesByParentId(2L)).thenReturn(replies);
 
         // when

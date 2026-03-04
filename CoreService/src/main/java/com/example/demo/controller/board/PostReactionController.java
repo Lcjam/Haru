@@ -7,7 +7,6 @@ import com.example.demo.mapper.board.PostMapper;
 import com.example.demo.mapper.board.PostReactionMapper;
 import com.example.demo.model.board.PostReaction;
 import com.example.demo.service.PostReactionService;
-import com.example.demo.util.TokenUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -18,6 +17,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -32,7 +32,6 @@ import java.util.Map;
 public class PostReactionController {
 
     private final PostReactionService postReactionService;
-    private final TokenUtils tokenUtils;
     private final PostReactionMapper postReactionMapper;
     private final PostMapper postMapper;
 
@@ -59,17 +58,13 @@ public class PostReactionController {
     })
     @PostMapping("/posts/{postId}/reactions")
     public ResponseEntity<BaseResponse<?>> addReaction(
-            @Parameter(description = "JWT 토큰 (Bearer {token} 형식)", required = true)
-            @RequestHeader("Authorization") String token,
+            Authentication authentication,
             @Parameter(description = "게시글 ID", required = true, example = "1")
             @PathVariable Long postId,
             @Parameter(description = "반응 요청 정보 (reactionType 필드 포함)", required = true)
             @RequestBody Map<String, String> request) {
 
-        String email = tokenUtils.getEmailFromAuthHeader(token);
-        if (email == null) {
-            return ResponseEntity.status(401).body(BaseResponse.error("인증되지 않은 요청입니다.", "401"));
-        }
+        String email = authentication.getName();
 
         String reactionType = request.get("reactionType");
         if (reactionType == null || reactionType.isEmpty()) {
@@ -148,15 +143,11 @@ public class PostReactionController {
     })
     @DeleteMapping("/posts/{postId}/reactions")
     public ResponseEntity<BaseResponse<?>> deleteReaction(
-            @Parameter(description = "JWT 토큰 (Bearer {token} 형식)", required = true)
-            @RequestHeader("Authorization") String token,
+            Authentication authentication,
             @Parameter(description = "게시글 ID", required = true, example = "1")
             @PathVariable Long postId) {
 
-        String email = tokenUtils.getEmailFromAuthHeader(token);
-        if (email == null) {
-            return ResponseEntity.status(401).body(BaseResponse.error("인증되지 않은 요청입니다.", "401"));
-        }
+        String email = authentication.getName();
 
         try {
             PostReaction existingReaction = postReactionMapper.getUserReaction(postId, email);
@@ -210,17 +201,12 @@ public class PostReactionController {
     })
     @GetMapping("/posts/{postId}/reactions")
     public ResponseEntity<BaseResponse<?>> getPostReaction(
-            @Parameter(description = "JWT 토큰 (Bearer {token} 형식)", required = true)
-            @RequestHeader("Authorization") String token,
+            Authentication authentication,
             @Parameter(description = "게시글 ID", required = true, example = "1")
             @PathVariable Long postId) {
-        
-        String email = tokenUtils.getEmailFromAuthHeader(token);
-        
-        if (email == null) {
-            return ResponseEntity.status(401).body(BaseResponse.error("인증되지 않은 요청입니다.", "401"));
-        }
-        
+
+        String email = authentication.getName();
+
         try {
             PostReactionResponse response = postReactionService.getPostReaction(email, postId);
             return ResponseEntity.ok(BaseResponse.success(response));
@@ -256,17 +242,12 @@ public class PostReactionController {
     })
     @GetMapping("/posts/{postId}/reactions/list")
     public ResponseEntity<BaseResponse<?>> getPostReactions(
-            @Parameter(description = "JWT 토큰 (Bearer {token} 형식)", required = true)
-            @RequestHeader("Authorization") String token,
+            Authentication authentication,
             @Parameter(description = "게시글 ID", required = true, example = "1")
             @PathVariable Long postId) {
-        
-        String email = tokenUtils.getEmailFromAuthHeader(token);
-        
-        if (email == null) {
-            return ResponseEntity.status(401).body(BaseResponse.error("인증되지 않은 요청입니다.", "401"));
-        }
-        
+
+        String email = authentication.getName();
+
         try {
             List<PostReactionResponse> responses = postReactionService.getPostReactions(email, postId);
             return ResponseEntity.ok(BaseResponse.success(responses));
@@ -302,15 +283,11 @@ public class PostReactionController {
     })
     @PostMapping("/{postId}/like")
     public ResponseEntity<BaseResponse<?>> toggleLike(
-            @Parameter(description = "JWT 토큰 (Bearer {token} 형식)", required = true)
-            @RequestHeader("Authorization") String token,
+            Authentication authentication,
             @Parameter(description = "게시글 ID", required = true, example = "1")
             @PathVariable Long postId) {
 
-        String email = tokenUtils.getEmailFromAuthHeader(token);
-        if (email == null) {
-            return ResponseEntity.status(401).body(BaseResponse.error("인증되지 않은 요청입니다.", "401"));
-        }
+        String email = authentication.getName();
 
         try {
             // 이미 좋아요를 눌렀는지 확인

@@ -17,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -109,12 +110,9 @@ public class ProfileController {
     })
     @GetMapping("/admin/user/{email}")
     public ResponseEntity<BaseResponse<ProfileResponse>> getAdminUserProfile(
-            @Parameter(description = "JWT 토큰 (Bearer {token} 형식)", required = true)
-            @RequestHeader("Authorization") String token,
             @Parameter(description = "조회할 사용자의 이메일", required = true, example = "user@example.com")
             @PathVariable String email) {
-        
-        // 주의: 실제 구현에서는 여기에 관리자 권한 검증 필요
+
         ProfileResponse profile = userService.getUserProfile(email);
         
         if (!profile.isSuccess()) {
@@ -312,23 +310,9 @@ public class ProfileController {
             )
     })
     @GetMapping("/me/image-info")
-    public ResponseEntity<BaseResponse<Map<String, String>>> getMyProfileImageInfo(
-            @Parameter(description = "JWT 토큰 (Bearer {token} 형식)", required = true)
-            @RequestHeader("Authorization") String token) {
-        
-        String tokenWithoutBearer = token;
-        if (token.startsWith("Bearer ")) {
-            tokenWithoutBearer = token.substring(7);
-        }
-        
-        if (!userService.tokenUtils.isTokenValid(tokenWithoutBearer)) {
-            Map<String, String> errorData = new HashMap<>();
-            errorData.put("message", "유효하지 않은 인증 토큰입니다.");
-            return ResponseEntity.badRequest().body(BaseResponse.error(errorData, "400"));
-        }
-        
-        String email = userService.tokenUtils.getEmailFromToken(tokenWithoutBearer);
-        String imageUrl = userService.getProfileImageUrl(email);
+    public ResponseEntity<BaseResponse<Map<String, String>>> getMyProfileImageInfo(Authentication authentication) {
+
+        String imageUrl = userService.getProfileImageUrl(authentication.getName());
         
         Map<String, String> responseData = new HashMap<>();
         responseData.put("imageUrl", imageUrl);

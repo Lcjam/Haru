@@ -3,7 +3,6 @@ package com.example.demo.controller;
 import com.example.demo.util.BaseResponse;
 import com.example.demo.model.Location;
 import com.example.demo.service.LocationService;
-import com.example.demo.util.TokenUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -14,6 +13,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
@@ -34,7 +34,6 @@ import java.time.LocalDateTime;
 public class LocationController {
     
     private final SimpMessagingTemplate messagingTemplate;
-    private final TokenUtils tokenUtils;
     private final LocationService locationService;
     private final NotificationService notificationService;
     private final UserMapper userMapper;
@@ -114,18 +113,12 @@ public class LocationController {
     })
     @GetMapping("/rooms/{chatroomId}/recent")
     public ResponseEntity<BaseResponse<?>> getRecentLocations(
-            @Parameter(description = "JWT 토큰 (Bearer {token} 형식)", required = true)
-            @RequestHeader("Authorization") String token,
+            Authentication authentication,
             @Parameter(description = "채팅방 ID", required = true, example = "1")
             @PathVariable Integer chatroomId) {
-        
-        String email = tokenUtils.getEmailFromAuthHeader(token);
-        
-        if (email == null) {
-            return ResponseEntity.status(401)
-                    .body(BaseResponse.error("인증되지 않은 요청입니다.", "401"));
-        }
-        
+
+        String email = authentication.getName();
+
         try {
             var locations = locationService.getRecentLocations(chatroomId);
             return ResponseEntity.ok(BaseResponse.success(locations));
@@ -159,20 +152,14 @@ public class LocationController {
     })
     @GetMapping("/rooms/{chatroomId}/users/{email}/last")
     public ResponseEntity<BaseResponse<?>> getLastLocation(
-            @Parameter(description = "JWT 토큰 (Bearer {token} 형식)", required = true)
-            @RequestHeader("Authorization") String token,
+            Authentication authentication,
             @Parameter(description = "채팅방 ID", required = true, example = "1")
             @PathVariable Integer chatroomId,
             @Parameter(description = "사용자 이메일", required = true, example = "user@example.com")
             @PathVariable String email) {
-        
-        String requestEmail = tokenUtils.getEmailFromAuthHeader(token);
-        
-        if (requestEmail == null) {
-            return ResponseEntity.status(401)
-                    .body(BaseResponse.error("인증되지 않은 요청입니다.", "401"));
-        }
-        
+
+        String requestEmail = authentication.getName();
+
         try {
             var location = locationService.getLastLocation(chatroomId, email);
             return ResponseEntity.ok(BaseResponse.success(location));

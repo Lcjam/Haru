@@ -7,7 +7,6 @@ import com.example.demo.mapper.board.BoardMemberMapper;
 import com.example.demo.model.User;
 import com.example.demo.model.board.Board;
 import com.example.demo.model.board.BoardMember;
-import com.example.demo.util.TokenUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -25,8 +24,8 @@ public class BoardService {
     private final BoardMapper boardMapper;
     private final BoardMemberMapper boardMemberMapper;
     private final UserMapper userMapper;
-    private final TokenUtils tokenUtils;
     private final FileStorageService fileStorageService;
+    private final NotificationService notificationService;
 
     /**
      * 게시판 생성
@@ -189,8 +188,8 @@ public class BoardService {
                 boardId, hostEmail, inviteEmail, role);
         
         // 초대 대상 사용자가 존재하는지 확인
-        User inviteUser = userMapper.findByEmail(inviteEmail);
-        if (inviteUser == null) {
+        User invitee = userMapper.findByEmail(inviteEmail);
+        if (invitee == null) {
             throw new IllegalArgumentException("초대 대상 사용자를 찾을 수 없습니다.");
         }
         
@@ -204,12 +203,6 @@ public class BoardService {
         if (inviterMembership == null || 
             (!inviterMembership.getRole().equals("HOST") && !inviterMembership.getRole().equals("ADMIN"))) {
             throw new IllegalArgumentException("멤버 초대 권한이 없습니다.");
-        }
-
-        // 초대 대상 사용자 확인
-        User invitee = userMapper.findByEmail(inviteEmail);
-        if (invitee == null) {
-            throw new IllegalArgumentException("초대 대상 사용자를 찾을 수 없습니다.");
         }
 
         // 이미 멤버인지 확인
@@ -237,7 +230,13 @@ public class BoardService {
 
         boardMemberMapper.addMember(newMember);
 
-        // TODO: 초대 알림 발송 로직 추가
+        notificationService.sendNotification(
+                inviteEmail,
+                String.format("[%s] 게시판에 초대되었습니다.", board.getName()),
+                "BOARD_INVITATION",
+                0,
+                0L
+        );
 
         return convertToResponse(board);
     }

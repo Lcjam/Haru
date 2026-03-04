@@ -1,5 +1,6 @@
 package com.example.demo.controller;
 
+import com.example.demo.config.TestSecurityConfig;
 import com.example.demo.dto.auth.*;
 import com.example.demo.service.UserService;
 import com.example.demo.util.BaseResponse;
@@ -10,8 +11,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -20,6 +24,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(AuthController.class)
+@Import(TestSecurityConfig.class)
 @DisplayName("AuthController 테스트")
 class AuthControllerTest {
 
@@ -104,12 +109,18 @@ class AuthControllerTest {
         // given
         SignupRequest invalidRequest = new SignupRequest();
         invalidRequest.setEmail("invalid-email"); // 잘못된 이메일 형식
+        SignupResponse failResponse = SignupResponse.builder()
+                .success(false)
+                .message("유효하지 않은 이메일 형식입니다.")
+                .build();
+        when(userService.registerUser(any(SignupRequest.class))).thenReturn(failResponse);
 
         // when & then
         mockMvc.perform(post("/api/core/auth/signup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest)))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value("error"));
     }
 
     @Test
@@ -177,16 +188,14 @@ class AuthControllerTest {
                 .success(true)
                 .message("비밀번호가 변경되었습니다.")
                 .build();
-        when(userService.changePasswordByToken(anyString(), any(PasswordChangeRequest.class)))
+        when(userService.changePassword(any(PasswordChangeRequest.class)))
                 .thenReturn(response);
 
         // when & then
-        mockMvc.perform(put("/api/core/auth/me/password")
-                        .header("Authorization", "Bearer testToken")
+        mockMvc.perform(put("/api/core/auth/me/password").with(user("test@example.com"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));
     }
 }
-

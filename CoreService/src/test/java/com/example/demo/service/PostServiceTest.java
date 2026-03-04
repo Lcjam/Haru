@@ -96,11 +96,12 @@ class PostServiceTest {
     void createPost_Success() {
         // given
         when(boardMapper.findBoardById(1L)).thenReturn(board);
-        when(boardMemberMapper.findBoardMemberByEmailAndBoardId("test@example.com", 1L))
-                .thenReturn(boardMember);
-        doNothing().when(postMapper).createPost(any(Post.class));
-        when(postMapper.getPostById(anyLong())).thenReturn(post);
-        when(postMapper.getPostImagesByPostId(anyLong())).thenReturn(Collections.emptyList());
+        doAnswer(invocation -> {
+            Post created = invocation.getArgument(0);
+            created.setId(1L);
+            return null;
+        }).when(postMapper).createPost(any(Post.class));
+        when(postMapper.getPostById(1L)).thenReturn(post);
 
         // when
         var result = postService.createPost("test@example.com", postCreateRequest);
@@ -131,6 +132,7 @@ class PostServiceTest {
     @DisplayName("게시글 생성 실패 - 멤버가 아님")
     void createPost_Fail_NotMember() {
         // given
+        board.setHostEmail("host@example.com");
         when(boardMapper.findBoardById(1L)).thenReturn(board);
         when(boardMemberMapper.findBoardMemberByEmailAndBoardId("test@example.com", 1L))
                 .thenReturn(null);
@@ -149,14 +151,15 @@ class PostServiceTest {
         when(postMapper.getPostById(1L)).thenReturn(post);
         doNothing().when(postMapper).updatePost(any(Post.class));
         doNothing().when(postMapper).deletePostImages(1L);
-        when(postMapper.getPostImagesByPostId(1L)).thenReturn(Collections.emptyList());
 
         Post updatedPost = Post.builder()
                 .id(1L)
+                .boardId(1L)
+                .authorEmail("test@example.com")
                 .title("수정된 제목")
                 .content("수정된 내용")
                 .build();
-        when(postMapper.getPostById(1L)).thenReturn(updatedPost);
+        when(postMapper.getPostById(1L)).thenReturn(post, updatedPost);
 
         // when
         var result = postService.updatePost("test@example.com", 1L, postUpdateRequest);
@@ -220,8 +223,6 @@ class PostServiceTest {
         // given
         when(postMapper.getPostById(1L)).thenReturn(post);
         when(boardMapper.findBoardById(1L)).thenReturn(board);
-        when(boardMemberMapper.findBoardMemberByEmailAndBoardId("test@example.com", 1L))
-                .thenReturn(boardMember);
         when(postMapper.getPostImagesByPostId(1L)).thenReturn(Collections.emptyList());
         doNothing().when(postMapper).increaseViewCount(1L);
 
@@ -253,8 +254,6 @@ class PostServiceTest {
         // given
         List<Post> posts = Arrays.asList(post);
         when(boardMapper.findBoardById(1L)).thenReturn(board);
-        when(boardMemberMapper.findBoardMemberByEmailAndBoardId("test@example.com", 1L))
-                .thenReturn(boardMember);
         when(postMapper.getPostsByBoardId(1L)).thenReturn(posts);
         when(postMapper.getPostImagesByPostId(1L)).thenReturn(Collections.emptyList());
 
@@ -274,8 +273,6 @@ class PostServiceTest {
         // given
         List<Post> posts = Arrays.asList(post);
         when(boardMapper.findBoardById(1L)).thenReturn(board);
-        when(boardMemberMapper.findBoardMemberByEmailAndBoardId("test@example.com", 1L))
-                .thenReturn(boardMember);
         when(postMapper.searchPosts(1L, "테스트")).thenReturn(posts);
         when(postMapper.getPostImagesByPostId(1L)).thenReturn(Collections.emptyList());
 
@@ -292,6 +289,7 @@ class PostServiceTest {
     @DisplayName("게시글 검색 실패 - 멤버가 아님")
     void searchPosts_Fail_NotMember() {
         // given
+        board.setHostEmail("host@example.com");
         when(boardMapper.findBoardById(1L)).thenReturn(board);
         when(boardMemberMapper.findBoardMemberByEmailAndBoardId("test@example.com", 1L))
                 .thenReturn(null);

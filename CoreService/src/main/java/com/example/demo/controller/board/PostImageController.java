@@ -2,11 +2,11 @@ package com.example.demo.controller.board;
 
 import com.example.demo.util.BaseResponse;
 import com.example.demo.service.FileStorageService;
-import com.example.demo.util.TokenUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -20,23 +20,18 @@ import java.util.Map;
 public class PostImageController {
 
     private final FileStorageService fileStorageService;
-    private final TokenUtils tokenUtils;
 
     /**
      * 게시글 이미지 업로드
      */
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<BaseResponse<?>> uploadPostImage(
-            @RequestHeader("Authorization") String token,
+            Authentication authentication,
             @PathVariable Long boardId,
             @RequestParam("image") MultipartFile image) {
-        
-        String email = tokenUtils.getEmailFromAuthHeader(token);
-        
-        if (email == null) {
-            return ResponseEntity.status(401).body(BaseResponse.error("인증되지 않은 요청입니다.", "401"));
-        }
-        
+
+        String email = authentication.getName();
+
         try {
             // 파일 검증
             if (image.isEmpty()) {
@@ -72,16 +67,12 @@ public class PostImageController {
      */
     @DeleteMapping
     public ResponseEntity<BaseResponse<String>> deletePostImage(
-            @RequestHeader("Authorization") String token,
+            Authentication authentication,
             @PathVariable Long boardId,
             @RequestParam("imageUrl") String imageUrl) {
-        
-        String email = tokenUtils.getEmailFromAuthHeader(token);
-        
-        if (email == null) {
-            return ResponseEntity.status(401).body(BaseResponse.error("인증되지 않은 요청입니다.", "401"));
-        }
-        
+
+        String email = authentication.getName();
+
         try {
             // 이미지 경로 검증
             if (!imageUrl.startsWith("/board-files/board_" + boardId)) {

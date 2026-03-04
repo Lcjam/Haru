@@ -7,7 +7,6 @@ import com.example.demo.dto.board.PostSearchRequest;
 import com.example.demo.dto.board.PagedPostResponse;
 import com.example.demo.service.PostService;
 import com.example.demo.util.BaseResponse;
-import com.example.demo.util.TokenUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -18,6 +17,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -30,7 +30,6 @@ import java.util.List;
 public class PostController {
 
     private final PostService postService;
-    private final TokenUtils tokenUtils;
 
     @Operation(
             summary = "게시글 작성",
@@ -55,19 +54,14 @@ public class PostController {
     })
     @PostMapping
     public ResponseEntity<BaseResponse<?>> createPost(
-            @Parameter(description = "JWT 토큰 (Bearer {token} 형식)", required = true)
-            @RequestHeader("Authorization") String token,
+            Authentication authentication,
             @Parameter(description = "게시판 ID", required = true, example = "1")
             @PathVariable Long boardId,
             @Parameter(description = "게시글 작성 요청 정보", required = true)
             @RequestBody PostCreateRequest request) {
-        
-        String email = tokenUtils.getEmailFromAuthHeader(token);
-        
-        if (email == null) {
-            return ResponseEntity.status(401).body(BaseResponse.error("인증되지 않은 요청입니다.", "401"));
-        }
-        
+
+        String email = authentication.getName();
+
         try {
             // boardId 설정
             request.setBoardId(boardId);
@@ -106,21 +100,16 @@ public class PostController {
     })
     @PutMapping("/{postId}")
     public ResponseEntity<BaseResponse<?>> updatePost(
-            @Parameter(description = "JWT 토큰 (Bearer {token} 형식)", required = true)
-            @RequestHeader("Authorization") String token,
+            Authentication authentication,
             @Parameter(description = "게시판 ID", required = true, example = "1")
             @PathVariable Long boardId,
             @Parameter(description = "게시글 ID", required = true, example = "1")
             @PathVariable Long postId,
             @Parameter(description = "게시글 수정 요청 정보", required = true)
             @RequestBody PostUpdateRequest request) {
-        
-        String email = tokenUtils.getEmailFromAuthHeader(token);
-        
-        if (email == null) {
-            return ResponseEntity.status(401).body(BaseResponse.error("인증되지 않은 요청입니다.", "401"));
-        }
-        
+
+        String email = authentication.getName();
+
         try {
             PostResponse response = postService.updatePost(email, postId, request);
             return ResponseEntity.ok(BaseResponse.success(response));
@@ -156,19 +145,14 @@ public class PostController {
     })
     @DeleteMapping("/{postId}")
     public ResponseEntity<BaseResponse<String>> deletePost(
-            @Parameter(description = "JWT 토큰 (Bearer {token} 형식)", required = true)
-            @RequestHeader("Authorization") String token,
+            Authentication authentication,
             @Parameter(description = "게시판 ID", required = true, example = "1")
             @PathVariable Long boardId,
             @Parameter(description = "게시글 ID", required = true, example = "1")
             @PathVariable Long postId) {
-        
-        String email = tokenUtils.getEmailFromAuthHeader(token);
-        
-        if (email == null) {
-            return ResponseEntity.status(401).body(BaseResponse.error("인증되지 않은 요청입니다.", "401"));
-        }
-        
+
+        String email = authentication.getName();
+
         try {
             postService.deletePost(email, postId);
             return ResponseEntity.ok(BaseResponse.success("게시글이 삭제되었습니다."));
@@ -204,19 +188,14 @@ public class PostController {
     })
     @GetMapping("/{postId}")
     public ResponseEntity<BaseResponse<?>> getPostById(
-            @Parameter(description = "JWT 토큰 (Bearer {token} 형식)", required = true)
-            @RequestHeader("Authorization") String token,
+            Authentication authentication,
             @Parameter(description = "게시판 ID", required = true, example = "1")
             @PathVariable Long boardId,
             @Parameter(description = "게시글 ID", required = true, example = "1")
             @PathVariable Long postId) {
-        
-        String email = tokenUtils.getEmailFromAuthHeader(token);
-        
-        if (email == null) {
-            return ResponseEntity.status(401).body(BaseResponse.error("인증되지 않은 요청입니다.", "401"));
-        }
-        
+
+        String email = authentication.getName();
+
         try {
             PostResponse response = postService.getPostById(email, postId);
             return ResponseEntity.ok(BaseResponse.success(response));
@@ -252,17 +231,12 @@ public class PostController {
     })
     @GetMapping
     public ResponseEntity<BaseResponse<?>> getPostsByBoardId(
-            @Parameter(description = "JWT 토큰 (Bearer {token} 형식)", required = true)
-            @RequestHeader("Authorization") String token,
+            Authentication authentication,
             @Parameter(description = "게시판 ID", required = true, example = "1")
             @PathVariable Long boardId) {
-        
-        String email = tokenUtils.getEmailFromAuthHeader(token);
-        
-        if (email == null) {
-            return ResponseEntity.status(401).body(BaseResponse.error("인증되지 않은 요청입니다.", "401"));
-        }
-        
+
+        String email = authentication.getName();
+
         try {
             List<PostResponse> posts = postService.getPostsByBoardId(email, boardId);
             return ResponseEntity.ok(BaseResponse.success(posts));
@@ -298,19 +272,14 @@ public class PostController {
     })
     @GetMapping("/search")
     public ResponseEntity<BaseResponse<?>> searchPosts(
-            @Parameter(description = "JWT 토큰 (Bearer {token} 형식)", required = true)
-            @RequestHeader("Authorization") String token,
+            Authentication authentication,
             @Parameter(description = "게시판 ID", required = true, example = "1")
             @PathVariable Long boardId,
             @Parameter(description = "검색 키워드", required = true, example = "제목")
             @RequestParam String keyword) {
-        
-        String email = tokenUtils.getEmailFromAuthHeader(token);
-        
-        if (email == null) {
-            return ResponseEntity.status(401).body(BaseResponse.error("인증되지 않은 요청입니다.", "401"));
-        }
-        
+
+        String email = authentication.getName();
+
         try {
             List<PostResponse> posts = postService.searchPosts(email, boardId, keyword);
             return ResponseEntity.ok(BaseResponse.success(posts));
@@ -346,19 +315,14 @@ public class PostController {
     })
     @PostMapping("/search")
     public ResponseEntity<BaseResponse<?>> searchPostsWithFilters(
-            @Parameter(description = "JWT 토큰 (Bearer {token} 형식)", required = true)
-            @RequestHeader("Authorization") String token,
+            Authentication authentication,
             @Parameter(description = "게시판 ID", required = true, example = "1")
             @PathVariable Long boardId,
             @Parameter(description = "검색 및 필터링 요청 정보", required = true)
             @RequestBody PostSearchRequest request) {
-        
-        String email = tokenUtils.getEmailFromAuthHeader(token);
-        
-        if (email == null) {
-            return ResponseEntity.status(401).body(BaseResponse.error("인증되지 않은 요청입니다.", "401"));
-        }
-        
+
+        String email = authentication.getName();
+
         try {
             // 요청에 게시판 ID 설정
             request.setBoardId(boardId);

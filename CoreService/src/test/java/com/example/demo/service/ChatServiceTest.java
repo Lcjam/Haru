@@ -109,7 +109,11 @@ class ChatServiceTest {
         when(productMapper.findById(1L, "buyer@example.com")).thenReturn(product);
         when(chatRoomMapper.findChatRoomByProductAndBuyer(1L, "buyer@example.com"))
                 .thenReturn(null);
-        doNothing().when(chatRoomMapper).createChatRoom(any(ChatRoom.class));
+        doAnswer(invocation -> {
+            ChatRoom created = invocation.getArgument(0);
+            created.setChatroomId(99);
+            return null;
+        }).when(chatRoomMapper).createChatRoom(any(ChatRoom.class));
         when(userMapper.findByEmail("seller@example.com")).thenReturn(seller);
         when(userMapper.findByEmail("buyer@example.com")).thenReturn(buyer);
         when(productImageMapper.findByProductId(1L)).thenReturn(Collections.emptyList());
@@ -120,7 +124,7 @@ class ChatServiceTest {
         // then
         assertThat(result).isNotNull();
         assertThat(result.isSuccess()).isTrue();
-        assertThat(result.getChatroomId()).isNotNull();
+        assertThat(result.getChatroomId()).isEqualTo(99);
         verify(chatRoomMapper, times(1)).createChatRoom(any(ChatRoom.class));
     }
 
@@ -210,7 +214,7 @@ class ChatServiceTest {
         when(productMapper.findById(1L, "buyer@example.com")).thenReturn(product);
         when(userMapper.findByEmail("seller@example.com")).thenReturn(seller);
         when(productImageMapper.findByProductId(1L)).thenReturn(Collections.emptyList());
-        doNothing().when(chatMessageMapper).updateMessageReadStatus(1, "buyer@example.com");
+        when(chatMessageMapper.updateMessageReadStatus(1, "buyer@example.com")).thenReturn(1);
 
         // when
         var result = chatService.getChatRoomDetail("buyer@example.com", 1);
