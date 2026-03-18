@@ -1,7 +1,8 @@
 package com.example.demo.controller.board;
 
-import com.example.demo.util.BaseResponse;
+import com.example.demo.service.BoardService;
 import com.example.demo.service.FileStorageService;
+import com.example.demo.util.BaseResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
@@ -20,6 +21,7 @@ import java.util.Map;
 public class PostImageController {
 
     private final FileStorageService fileStorageService;
+    private final BoardService boardService;
 
     /**
      * 게시글 이미지 업로드
@@ -31,35 +33,27 @@ public class PostImageController {
             @RequestParam("image") MultipartFile image) {
 
         String email = authentication.getName();
+        boardService.checkActiveMembership(email, boardId);
 
-        try {
-            // 파일 검증
-            if (image.isEmpty()) {
-                return ResponseEntity.badRequest().body(BaseResponse.error("이미지 파일이 비어있습니다.", "400"));
-            }
-            
-            // 이미지 저장
-            String fileName = image.getOriginalFilename();
-            String imagePath = fileStorageService.storeBoardFile(image, boardId, "image");
-            
-            if (imagePath == null) {
-                return ResponseEntity.badRequest().body(BaseResponse.error("이미지 저장에 실패했습니다.", "400"));
-            }
-            
-            // 이미지 URL 생성 - API 엔드포인트로 변경
-            String imageUrl = "/api/core/boards/images/" + boardId + "/image/" + 
-                              imagePath.substring(imagePath.lastIndexOf("/") + 1);
-            
-            // 응답 데이터
-            Map<String, String> response = new HashMap<>();
-            response.put("imageUrl", imageUrl);
-            response.put("originalFileName", fileName);
-            
-            return ResponseEntity.ok(BaseResponse.success(response));
-        } catch (Exception e) {
-            log.error("이미지 업로드 중 오류: {}", e.getMessage());
-            return ResponseEntity.status(500).body(BaseResponse.error("서버 오류가 발생했습니다.", "500"));
+        if (image.isEmpty()) {
+            throw new IllegalArgumentException("이미지 파일이 비어있습니다.");
         }
+
+        String fileName = image.getOriginalFilename();
+        String imagePath = fileStorageService.storeBoardFile(image, boardId, "image");
+
+        if (imagePath == null) {
+            throw new IllegalArgumentException("이미지 저장에 실패했습니다.");
+        }
+
+        String imageUrl = "/api/core/boards/images/" + boardId + "/image/" +
+                          imagePath.substring(imagePath.lastIndexOf("/") + 1);
+
+        Map<String, String> response = new HashMap<>();
+        response.put("imageUrl", imageUrl);
+        response.put("originalFileName", fileName);
+
+        return ResponseEntity.ok(BaseResponse.success(response));
     }
 
     /**
@@ -72,24 +66,22 @@ public class PostImageController {
             @RequestParam("imageUrl") String imageUrl) {
 
         String email = authentication.getName();
+        boardService.checkActiveMembership(email, boardId);
 
-        try {
-            // 이미지 경로 검증
-            if (!imageUrl.startsWith("/board-files/board_" + boardId)) {
-                return ResponseEntity.badRequest().body(BaseResponse.error("유효하지 않은 이미지 URL입니다.", "400"));
-            }
-            
-            // 이미지 삭제
-            boolean deleted = fileStorageService.deleteBoardFile(imageUrl);
-            
-            if (!deleted) {
-                return ResponseEntity.badRequest().body(BaseResponse.error("이미지 삭제에 실패했습니다.", "400"));
-            }
-            
-            return ResponseEntity.ok(BaseResponse.success("이미지가 삭제되었습니다."));
-        } catch (Exception e) {
-            log.error("이미지 삭제 중 오류: {}", e.getMessage());
-            return ResponseEntity.status(500).body(BaseResponse.error("서버 오류가 발생했습니다.", "500"));
+        // 경로 순회 공격 차단
+        if (imageUrl.contains("..")) {
+            throw new IllegalArgumentException("유효하지 않은 이미지 URL입니다.");
         }
+
+        if (!imageUrl.startsWith("/board-files/board_" + boardId + "/")) {
+            throw new IllegalArgumentException("유효하지 않은 이미지 URL입니다.");
+        }
+
+        boolean deleted = fileStorageService.deleteBoardFile(imageUrl);
+        if (!deleted) {
+            throw new IllegalArgumentException("이미지 삭제에 실패했습니다.");
+        }
+
+        return ResponseEntity.ok(BaseResponse.success("이미지가 삭제되었습니다."));
     }
 }

@@ -1,6 +1,8 @@
 package com.example.demo.service;
 
 import com.example.demo.dto.board.*;
+import com.example.demo.exception.ResourceNotFoundException;
+import com.example.demo.exception.UnauthorizedException;
 import com.example.demo.mapper.UserMapper;
 import com.example.demo.mapper.board.BoardMapper;
 import com.example.demo.mapper.board.BoardMemberMapper;
@@ -103,6 +105,23 @@ public class BoardService {
         return boards.stream()
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 사용자가 게시판의 활성 멤버(호스트 포함)인지 확인합니다.
+     * 멤버가 아니면 UnauthorizedException을 던집니다.
+     */
+    public void checkActiveMembership(String userEmail, Long boardId) {
+        Board board = boardMapper.findBoardById(boardId);
+        if (board == null) {
+            throw new ResourceNotFoundException("게시판을 찾을 수 없습니다.");
+        }
+        if (!board.getHostEmail().equals(userEmail)) {
+            BoardMember member = boardMemberMapper.findMemberByBoardIdAndUserEmail(boardId, userEmail);
+            if (member == null || !"ACTIVE".equals(member.getStatus())) {
+                throw new UnauthorizedException("게시판 멤버만 이용할 수 있습니다.");
+            }
+        }
     }
 
     /**

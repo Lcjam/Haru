@@ -255,27 +255,15 @@ public class ProductController {
             Authentication authentication,
             @RequestParam Long productId,
             @RequestParam String requestEmail) {
-        try {
-            log.info("승인 상태 조회 요청: productId={}", productId);
-            String email = authentication.getName();
+        String email = authentication.getName();
+        log.info("승인 상태 조회 요청: productId={}", productId);
 
-            String approvalStatus = productService.getApprovalStatus(email, productId, requestEmail);
-            log.info("승인 상태 조회 결과: productId={}, status={}", productId, approvalStatus);
+        String approvalStatus = productService.getApprovalStatus(email, productId, requestEmail);
+        log.info("승인 상태 조회 결과: productId={}, status={}", productId, approvalStatus);
 
-            Map<String, String> response = new HashMap<>();
-            response.put("status", approvalStatus != null ? approvalStatus : "미신청");
-            
-            return ResponseEntity.ok(new BaseResponse<>(response));
-            
-        } catch (IllegalArgumentException e) {
-            log.warn("승인 상태 조회 중 검증 오류: productId={}, error={}", productId, e.getMessage());
-            return ResponseEntity.badRequest()
-                .body(new BaseResponse<>(null, e.getMessage()));
-        } catch (Exception e) {
-            log.error("승인 상태 조회 중 오류 발생: productId={}, error={}", productId, e.getMessage(), e);
-            return ResponseEntity.status(500)
-                .body(new BaseResponse<>(null, "승인 상태 조회 중 오류가 발생했습니다."));
-        }
+        Map<String, String> response = new HashMap<>();
+        response.put("status", approvalStatus != null ? approvalStatus : "미신청");
+        return ResponseEntity.ok(new BaseResponse<>(response));
     }
 }
 

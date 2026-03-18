@@ -117,16 +117,8 @@ public class LocationController {
             @Parameter(description = "채팅방 ID", required = true, example = "1")
             @PathVariable Integer chatroomId) {
 
-        String email = authentication.getName();
-
-        try {
-            var locations = locationService.getRecentLocations(chatroomId);
-            return ResponseEntity.ok(BaseResponse.success(locations));
-        } catch (Exception e) {
-            log.error("위치 정보 조회 중 오류 발생: {}", e.getMessage());
-            return ResponseEntity.status(500)
-                    .body(BaseResponse.error("서버 오류가 발생했습니다.", "500"));
-        }
+        var locations = locationService.getRecentLocations(chatroomId);
+        return ResponseEntity.ok(BaseResponse.success(locations));
     }
 
     @Operation(
@@ -158,15 +150,7 @@ public class LocationController {
             @Parameter(description = "사용자 이메일", required = true, example = "user@example.com")
             @PathVariable String email) {
 
-        String requestEmail = authentication.getName();
-
-        try {
-            var location = locationService.getLastLocation(chatroomId, email);
-            return ResponseEntity.ok(BaseResponse.success(location));
-        } catch (Exception e) {
-            log.error("위치 정보 조회 중 오류 발생: {}", e.getMessage());
-            return ResponseEntity.status(500)
-                    .body(BaseResponse.error("서버 오류가 발생했습니다.", "500"));
-        }
+        var location = locationService.getLastLocation(chatroomId, email);
+        return ResponseEntity.ok(BaseResponse.success(location));
     }
 }

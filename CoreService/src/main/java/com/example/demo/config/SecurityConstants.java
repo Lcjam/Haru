@@ -40,11 +40,9 @@ public final class SecurityConstants {
             "/api/core/market/products/requests/approval-status",
             "/api/core/market/products/*",
 
-            // WebSocket
+            // WebSocket — HTTP upgrade endpoint only; STOMP broker prefixes (/topic, /app) are not HTTP paths
             "/ws",
             "/ws/**",
-            "/topic/**",
-            "/app/**",
 
             // Swagger / OpenAPI
             "/swagger-ui/**",
