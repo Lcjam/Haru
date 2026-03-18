@@ -4,7 +4,6 @@ import com.example.demo.dto.board.*;
 import com.example.demo.model.board.BoardMember;
 import com.example.demo.service.BoardService;
 import com.example.demo.util.BaseResponse;
-import com.example.demo.util.TokenUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -16,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -30,7 +30,6 @@ import java.util.Map;
 public class BoardController {
 
     private final BoardService boardService;
-    private final TokenUtils tokenUtils;
 
     @Operation(
             summary = "게시판 생성",
@@ -55,26 +54,12 @@ public class BoardController {
     })
     @PostMapping
     public ResponseEntity<BaseResponse<?>> createBoard(
-            @Parameter(description = "JWT 토큰 (Bearer {token} 형식)", required = true)
-            @RequestHeader("Authorization") String token,
+            Authentication authentication,
             @Parameter(description = "게시판 생성 요청 정보", required = true)
             @RequestBody BoardCreateRequest request) {
-        
-        String email = tokenUtils.getEmailFromAuthHeader(token);
-        
-        if (email == null) {
-            return ResponseEntity.status(401)
-                    .body(BaseResponse.error("인증되지 않은 요청입니다.", "401"));
-        }
-        
-        try {
-            BoardResponse response = boardService.createBoard(email, request);
-            return ResponseEntity.ok(BaseResponse.success(response));
-        } catch (Exception e) {
-            log.error("게시판 생성 중 오류: {}", e.getMessage());
-            return ResponseEntity.badRequest()
-                    .body(BaseResponse.error(e.getMessage(), "400"));
-        }
+        String email = authentication.getName();
+        BoardResponse response = boardService.createBoard(email, request);
+        return ResponseEntity.ok(BaseResponse.success(response));
     }
 
     @Operation(
@@ -100,30 +85,12 @@ public class BoardController {
     })
     @GetMapping("/{boardId}")
     public ResponseEntity<BaseResponse<?>> getBoardById(
-            @Parameter(description = "JWT 토큰 (Bearer {token} 형식)", required = true)
-            @RequestHeader("Authorization") String token,
+            Authentication authentication,
             @Parameter(description = "게시판 ID", required = true, example = "1")
             @PathVariable Long boardId) {
-        
-        String email = tokenUtils.getEmailFromAuthHeader(token);
-        
-        if (email == null) {
-            return ResponseEntity.status(401)
-                    .body(BaseResponse.error("인증되지 않은 요청입니다.", "401"));
-        }
-        
-        try {
-            BoardResponse response = boardService.getBoardById(boardId, email);
-            return ResponseEntity.ok(BaseResponse.success(response));
-        } catch (IllegalArgumentException e) {
-            log.warn("게시판 조회 실패: {}", e.getMessage());
-            return ResponseEntity.badRequest()
-                    .body(BaseResponse.error(e.getMessage(), "400"));
-        } catch (Exception e) {
-            log.error("게시판 조회 중 오류: {}", e.getMessage());
-            return ResponseEntity.status(500)
-                    .body(BaseResponse.error("서버 오류가 발생했습니다.", "500"));
-        }
+        String email = authentication.getName();
+        BoardResponse response = boardService.getBoardById(boardId, email);
+        return ResponseEntity.ok(BaseResponse.success(response));
     }
 
     @Operation(
@@ -144,22 +111,10 @@ public class BoardController {
     })
     @GetMapping("/hosted")
     public ResponseEntity<BaseResponse<?>> getBoardsByHost(
-            @Parameter(description = "JWT 토큰 (Bearer {token} 형식)", required = true)
-            @RequestHeader("Authorization") String token) {
-        
-        String email = tokenUtils.getEmailFromAuthHeader(token);
-        
-        if (email == null) {
-            return ResponseEntity.status(401).body(BaseResponse.error("인증되지 않은 요청입니다.", "401"));
-        }
-        
-        try {
-            List<BoardResponse> boards = boardService.getBoardsByHost(email);
-            return ResponseEntity.ok(BaseResponse.success(boards));
-        } catch (Exception e) {
-            log.error("호스트 게시판 목록 조회 중 오류: {}", e.getMessage());
-            return ResponseEntity.status(500).body(BaseResponse.error("서버 오류가 발생했습니다.", "500"));
-        }
+            Authentication authentication) {
+        String email = authentication.getName();
+        List<BoardResponse> boards = boardService.getBoardsByHost(email);
+        return ResponseEntity.ok(BaseResponse.success(boards));
     }
 
     @Operation(
@@ -180,22 +135,10 @@ public class BoardController {
     })
     @GetMapping("/joined")
     public ResponseEntity<BaseResponse<?>> getBoardsByMember(
-            @Parameter(description = "JWT 토큰 (Bearer {token} 형식)", required = true)
-            @RequestHeader("Authorization") String token) {
-        
-        String email = tokenUtils.getEmailFromAuthHeader(token);
-        
-        if (email == null) {
-            return ResponseEntity.status(401).body(BaseResponse.error("인증되지 않은 요청입니다.", "401"));
-        }
-        
-        try {
-            List<BoardResponse> boards = boardService.getBoardsByMember(email);
-            return ResponseEntity.ok(BaseResponse.success(boards));
-        } catch (Exception e) {
-            log.error("멤버 게시판 목록 조회 중 오류: {}", e.getMessage());
-            return ResponseEntity.status(500).body(BaseResponse.error("서버 오류가 발생했습니다.", "500"));
-        }
+            Authentication authentication) {
+        String email = authentication.getName();
+        List<BoardResponse> boards = boardService.getBoardsByMember(email);
+        return ResponseEntity.ok(BaseResponse.success(boards));
     }
 
     @Operation(
@@ -221,29 +164,14 @@ public class BoardController {
     })
     @PutMapping("/{boardId}")
     public ResponseEntity<BaseResponse<?>> updateBoard(
-            @Parameter(description = "JWT 토큰 (Bearer {token} 형식)", required = true)
-            @RequestHeader("Authorization") String token,
+            Authentication authentication,
             @Parameter(description = "게시판 ID", required = true, example = "1")
             @PathVariable Long boardId,
             @Parameter(description = "게시판 수정 요청 정보", required = true)
             @RequestBody BoardCreateRequest request) {
-        
-        String email = tokenUtils.getEmailFromAuthHeader(token);
-        
-        if (email == null) {
-            return ResponseEntity.status(401).body(BaseResponse.error("인증되지 않은 요청입니다.", "401"));
-        }
-        
-        try {
-            BoardResponse response = boardService.updateBoard(email, boardId, request);
-            return ResponseEntity.ok(BaseResponse.success(response));
-        } catch (IllegalArgumentException e) {
-            log.warn("게시판 수정 실패: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(BaseResponse.error(e.getMessage(), "400"));
-        } catch (Exception e) {
-            log.error("게시판 수정 중 오류: {}", e.getMessage());
-            return ResponseEntity.status(500).body(BaseResponse.error("서버 오류가 발생했습니다.", "500"));
-        }
+        String email = authentication.getName();
+        BoardResponse response = boardService.updateBoard(email, boardId, request);
+        return ResponseEntity.ok(BaseResponse.success(response));
     }
 
     @Operation(
@@ -269,29 +197,14 @@ public class BoardController {
     })
     @PostMapping(value = "/{boardId}/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<BaseResponse<?>> uploadBoardImage(
-            @Parameter(description = "JWT 토큰 (Bearer {token} 형식)", required = true)
-            @RequestHeader("Authorization") String token,
+            Authentication authentication,
             @Parameter(description = "게시판 ID", required = true, example = "1")
             @PathVariable Long boardId,
             @Parameter(description = "업로드할 이미지 파일", required = true)
             @RequestParam("image") MultipartFile image) {
-        
-        String email = tokenUtils.getEmailFromAuthHeader(token);
-        
-        if (email == null) {
-            return ResponseEntity.status(401).body(BaseResponse.error("인증되지 않은 요청입니다.", "401"));
-        }
-        
-        try {
-            BoardResponse response = boardService.uploadBoardImage(email, boardId, image);
-            return ResponseEntity.ok(BaseResponse.success(response));
-        } catch (IllegalArgumentException e) {
-            log.warn("이미지 업로드 실패: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(BaseResponse.error(e.getMessage(), "400"));
-        } catch (Exception e) {
-            log.error("이미지 업로드 중 오류: {}", e.getMessage());
-            return ResponseEntity.status(500).body(BaseResponse.error("서버 오류가 발생했습니다.", "500"));
-        }
+        String email = authentication.getName();
+        BoardResponse response = boardService.uploadBoardImage(email, boardId, image);
+        return ResponseEntity.ok(BaseResponse.success(response));
     }
 
     @Operation(
@@ -317,37 +230,23 @@ public class BoardController {
     })
     @PostMapping("/{boardId}/members/invite")
     public ResponseEntity<BaseResponse<?>> inviteMember(
-            @Parameter(description = "JWT 토큰 (Bearer {token} 형식)", required = true)
-            @RequestHeader("Authorization") String token,
+            Authentication authentication,
             @Parameter(description = "게시판 ID", required = true, example = "1")
             @PathVariable Long boardId,
             @Parameter(description = "멤버 초대 요청 정보 (이메일, 역할)", required = true)
             @RequestBody MemberInviteRequest request) {
-        
-        String email = tokenUtils.getEmailFromAuthHeader(token);
-        
-        if (email == null) {
-            return ResponseEntity.status(401).body(BaseResponse.error("인증되지 않은 요청입니다.", "401"));
+        String email = authentication.getName();
+
+        String inviteEmail = request.getEmail();
+        if (inviteEmail == null || inviteEmail.isEmpty()) {
+            throw new IllegalArgumentException("초대할 사용자의 이메일이 필요합니다.");
         }
-        
-        try {
-            // 초대 요청의 이메일과 역할을 로그로 확인
-            log.info("멤버 초대 요청: boardId={}, inviteEmail={}, role={}", 
-                    boardId, request.getEmail(), request.getRole());
-            
-            if (request.getEmail() == null || request.getEmail().isEmpty()) {
-                return ResponseEntity.badRequest().body(BaseResponse.error("초대할 사용자의 이메일이 필요합니다.", "400"));
-            }
-            
-            BoardResponse response = boardService.inviteMember(email, boardId, request.getEmail(), request.getRole());
-            return ResponseEntity.ok(BaseResponse.success(response));
-        } catch (IllegalArgumentException e) {
-            log.warn("멤버 초대 실패: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(BaseResponse.error(e.getMessage(), "400"));
-        } catch (Exception e) {
-            log.error("멤버 초대 중 오류: {}", e.getMessage());
-            return ResponseEntity.status(500).body(BaseResponse.error("서버 오류가 발생했습니다.", "500"));
-        }
+
+        log.info("멤버 초대 요청: boardId={}, inviteEmail={}, role={}",
+                boardId, inviteEmail, request.getRole());
+
+        BoardResponse response = boardService.inviteMember(email, boardId, inviteEmail, request.getRole());
+        return ResponseEntity.ok(BaseResponse.success(response));
     }
 
     @Operation(
@@ -373,36 +272,18 @@ public class BoardController {
     })
     @PostMapping("/{boardId}/members/accept")
     public ResponseEntity<BaseResponse<?>> acceptInvitation(
-            @Parameter(description = "JWT 토큰 (Bearer {token} 형식)", required = true)
-            @RequestHeader("Authorization") String token,
+            Authentication authentication,
             @Parameter(description = "게시판 ID", required = true, example = "1")
             @PathVariable Long boardId) {
-        
-        String email = tokenUtils.getEmailFromAuthHeader(token);
-        
-        if (email == null) {
-            return ResponseEntity.status(401)
-                    .body(BaseResponse.error("인증되지 않은 요청입니다.", "401"));
-        }
-        
-        try {
-            BoardMember member = boardService.acceptInvitation(email, boardId);
-            Map<String, Object> response = Map.of(
+        String email = authentication.getName();
+        BoardMember member = boardService.acceptInvitation(email, boardId);
+        Map<String, Object> response = Map.of(
                 "message", "초대를 수락했습니다.",
                 "memberId", member.getId(),
                 "status", member.getStatus(),
                 "role", member.getRole()
-            );
-            return ResponseEntity.ok(BaseResponse.success(response));
-        } catch (IllegalArgumentException e) {
-            log.warn("초대 수락 실패: {}", e.getMessage());
-            return ResponseEntity.badRequest()
-                    .body(BaseResponse.error(e.getMessage(), "400"));
-        } catch (Exception e) {
-            log.error("초대 수락 중 오류: {}", e.getMessage());
-            return ResponseEntity.status(500)
-                    .body(BaseResponse.error("서버 오류가 발생했습니다.", "500"));
-        }
+        );
+        return ResponseEntity.ok(BaseResponse.success(response));
     }
 
     @Operation(
@@ -428,30 +309,12 @@ public class BoardController {
     })
     @PostMapping("/{boardId}/members/reject")
     public ResponseEntity<BaseResponse<String>> rejectInvitation(
-            @Parameter(description = "JWT 토큰 (Bearer {token} 형식)", required = true)
-            @RequestHeader("Authorization") String token,
+            Authentication authentication,
             @Parameter(description = "게시판 ID", required = true, example = "1")
             @PathVariable Long boardId) {
-        
-        String email = tokenUtils.getEmailFromAuthHeader(token);
-        
-        if (email == null) {
-            return ResponseEntity.status(401)
-                    .body(BaseResponse.error("인증되지 않은 요청입니다.", "401"));
-        }
-        
-        try {
-            boardService.rejectInvitation(email, boardId);
-            return ResponseEntity.ok(BaseResponse.success("초대를 거절했습니다."));
-        } catch (IllegalArgumentException e) {
-            log.warn("초대 거절 실패: {}", e.getMessage());
-            return ResponseEntity.badRequest()
-                    .body(BaseResponse.error(e.getMessage(), "400"));
-        } catch (Exception e) {
-            log.error("초대 거절 중 오류: {}", e.getMessage());
-            return ResponseEntity.status(500)
-                    .body(BaseResponse.error("서버 오류가 발생했습니다.", "500"));
-        }
+        String email = authentication.getName();
+        boardService.rejectInvitation(email, boardId);
+        return ResponseEntity.ok(BaseResponse.success("초대를 거절했습니다."));
     }
 
     @Operation(
@@ -477,29 +340,14 @@ public class BoardController {
     })
     @DeleteMapping("/{boardId}/members/{memberId}")
     public ResponseEntity<BaseResponse<String>> kickMember(
-            @Parameter(description = "JWT 토큰 (Bearer {token} 형식)", required = true)
-            @RequestHeader("Authorization") String token,
+            Authentication authentication,
             @Parameter(description = "게시판 ID", required = true, example = "1")
             @PathVariable Long boardId,
             @Parameter(description = "멤버 ID", required = true, example = "1")
             @PathVariable Long memberId) {
-        
-        String email = tokenUtils.getEmailFromAuthHeader(token);
-        
-        if (email == null) {
-            return ResponseEntity.status(401).body(BaseResponse.error("인증되지 않은 요청입니다.", "401"));
-        }
-        
-        try {
-            boardService.kickMember(email, boardId, memberId);
-            return ResponseEntity.ok(BaseResponse.success("멤버가 추방되었습니다."));
-        } catch (IllegalArgumentException e) {
-            log.warn("멤버 추방 실패: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(BaseResponse.error(e.getMessage(), "400"));
-        } catch (Exception e) {
-            log.error("멤버 추방 중 오류: {}", e.getMessage());
-            return ResponseEntity.status(500).body(BaseResponse.error("서버 오류가 발생했습니다.", "500"));
-        }
+        String email = authentication.getName();
+        boardService.kickMember(email, boardId, memberId);
+        return ResponseEntity.ok(BaseResponse.success("멤버가 추방되었습니다."));
     }
 
     @Operation(
@@ -525,30 +373,12 @@ public class BoardController {
     })
     @DeleteMapping("/{boardId}")
     public ResponseEntity<BaseResponse<String>> deleteBoard(
-            @Parameter(description = "JWT 토큰 (Bearer {token} 형식)", required = true)
-            @RequestHeader("Authorization") String token,
+            Authentication authentication,
             @Parameter(description = "게시판 ID", required = true, example = "1")
             @PathVariable Long boardId) {
-        
-        String email = tokenUtils.getEmailFromAuthHeader(token);
-        
-        if (email == null) {
-            return ResponseEntity.status(401)
-                    .body(BaseResponse.error("인증되지 않은 요청입니다.", "401"));
-        }
-        
-        try {
-            boardService.deleteBoard(email, boardId);
-            return ResponseEntity.ok(BaseResponse.success("게시판이 삭제되었습니다."));
-        } catch (IllegalArgumentException e) {
-            log.warn("게시판 삭제 실패: {}", e.getMessage());
-            return ResponseEntity.badRequest()
-                    .body(BaseResponse.error(e.getMessage(), "400"));
-        } catch (Exception e) {
-            log.error("게시판 삭제 중 오류: {}", e.getMessage());
-            return ResponseEntity.status(500)
-                    .body(BaseResponse.error("서버 오류가 발생했습니다.", "500"));
-        }
+        String email = authentication.getName();
+        boardService.deleteBoard(email, boardId);
+        return ResponseEntity.ok(BaseResponse.success("게시판이 삭제되었습니다."));
     }
 
     @Operation(
@@ -574,34 +404,18 @@ public class BoardController {
     })
     @PutMapping("/{boardId}/status")
     public ResponseEntity<BaseResponse<?>> updateBoardStatus(
-            @Parameter(description = "JWT 토큰 (Bearer {token} 형식)", required = true)
-            @RequestHeader("Authorization") String token,
+            Authentication authentication,
             @Parameter(description = "게시판 ID", required = true, example = "1")
             @PathVariable Long boardId,
             @Parameter(description = "상태 변경 요청 정보 (status 필드 포함)", required = true)
             @RequestBody Map<String, String> request) {
-        
-        String email = tokenUtils.getEmailFromAuthHeader(token);
-        
-        if (email == null) {
-            return ResponseEntity.status(401).body(BaseResponse.error("인증되지 않은 요청입니다.", "401"));
-        }
-        
+        String email = authentication.getName();
         String status = request.get("status");
         if (status == null) {
-            return ResponseEntity.badRequest().body(BaseResponse.error("상태 값이 필요합니다.", "400"));
+            throw new IllegalArgumentException("상태 값이 필요합니다.");
         }
-        
-        try {
-            BoardResponse response = boardService.updateBoardStatus(email, boardId, status);
-            return ResponseEntity.ok(BaseResponse.success(response));
-        } catch (IllegalArgumentException e) {
-            log.warn("게시판 상태 변경 실패: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(BaseResponse.error(e.getMessage(), "400"));
-        } catch (Exception e) {
-            log.error("게시판 상태 변경 중 오류: {}", e.getMessage());
-            return ResponseEntity.status(500).body(BaseResponse.error("서버 오류가 발생했습니다.", "500"));
-        }
+        BoardResponse response = boardService.updateBoardStatus(email, boardId, status);
+        return ResponseEntity.ok(BaseResponse.success(response));
     }
 
     @Operation(
@@ -627,34 +441,19 @@ public class BoardController {
     })
     @PutMapping("/{boardId}/host")
     public ResponseEntity<BaseResponse<?>> changeHost(
-            @Parameter(description = "JWT 토큰 (Bearer {token} 형식)", required = true)
-            @RequestHeader("Authorization") String token,
+            Authentication authentication,
             @Parameter(description = "게시판 ID", required = true, example = "1")
             @PathVariable Long boardId,
             @Parameter(description = "호스트 변경 요청 정보 (newHostEmail 필드 포함)", required = true)
             @RequestBody Map<String, String> request) {
-        
-        String email = tokenUtils.getEmailFromAuthHeader(token);
-        
-        if (email == null) {
-            return ResponseEntity.status(401).body(BaseResponse.error("인증되지 않은 요청입니다.", "401"));
-        }
-        
+        String email = authentication.getName();
         String newHostEmail = request.get("newHostEmail");
         if (newHostEmail == null) {
-            return ResponseEntity.badRequest().body(BaseResponse.error("새 호스트 이메일이 필요합니다.", "400"));
+            throw new IllegalArgumentException("새 호스트 이메일이 필요합니다.");
         }
-        
-        try {
-            BoardResponse response = boardService.changeHost(email, boardId, newHostEmail);
-            return ResponseEntity.ok(BaseResponse.success(response));
-        } catch (IllegalArgumentException e) {
-            log.warn("호스트 변경 실패: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(BaseResponse.error(e.getMessage(), "400"));
-        } catch (Exception e) {
-            log.error("호스트 변경 중 오류: {}", e.getMessage());
-            return ResponseEntity.status(500).body(BaseResponse.error("서버 오류가 발생했습니다.", "500"));
-        }
+
+        BoardResponse response = boardService.changeHost(email, boardId, newHostEmail);
+        return ResponseEntity.ok(BaseResponse.success(response));
     }
 
     @Operation(
@@ -680,29 +479,12 @@ public class BoardController {
     })
     @GetMapping("/{boardId}/members")
     public ResponseEntity<BaseResponse<?>> getBoardMembers(
-            @Parameter(description = "JWT 토큰 (Bearer {token} 형식)", required = true)
-            @RequestHeader("Authorization") String token,
+            Authentication authentication,
             @Parameter(description = "게시판 ID", required = true, example = "1")
             @PathVariable Long boardId) {
-        
-        String email = tokenUtils.getEmailFromAuthHeader(token);
-        
-        if (email == null) {
-            return ResponseEntity.status(401)
-                    .body(BaseResponse.error("인증되지 않은 요청입니다.", "401"));
-        }
-        
-        try {
-            List<BoardMember> members = boardService.getBoardMembers(email, boardId);
-            return ResponseEntity.ok(BaseResponse.success(members));
-        } catch (IllegalArgumentException e) {
-            log.warn("게시판 멤버 목록 조회 실패: {}", e.getMessage());
-            return ResponseEntity.badRequest()
-                    .body(BaseResponse.error(e.getMessage(), "400"));
-        } catch (Exception e) {
-            log.error("게시판 멤버 목록 조회 중 오류: {}", e.getMessage());
-            return ResponseEntity.status(500)
-                    .body(BaseResponse.error("서버 오류가 발생했습니다.", "500"));
-        }
+        String email = authentication.getName();
+        List<BoardMember> members = boardService.getBoardMembers(email, boardId);
+        return ResponseEntity.ok(BaseResponse.success(members));
     }
+
 }

@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -19,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -36,60 +38,11 @@ public class SecurityConfig {
                 .exceptionHandling(
                         exceptionHandling -> exceptionHandling.authenticationEntryPoint(jwtAuthenticationEntryPoint))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(
-                                // 정적 리소스 허용
-                                "/profile-images/**",
-                                "/chat-images/**",
-                                "/uploads/**",
-                                "/board-files/**", // 게시판 이미지 접근 허용
-                                // 인증 없이 접근 가능한 엔드포인트
-                                "/api/core/auth/signup",
-                                "/api/core/auth/login",
-                                "/api/core/auth/logout",
-                                "/api/core/auth/me/password/notoken",
-                                "/api/core/auth/me/password",
-                                "/api/core/hobbies",
-                                "/api/core/hobbies/simple",
-                                "/api/core/hobbies/categories",
-                                "/api/core/hobbies/*/categories",
-                                "/api/core/hobbies/categories/*",
-                                "/api/core/profiles/user/*",
-                                "/api/core/market/*",
-                                "/api/core/market/products/requests/approved",
-                                "/api/core/market/products/all",
-                                "/api/core/market/products/all/filter",
-                                "/api/core/market/products/images/**",
-                                "/api/core/market/products/{id}",
-                                // WebSocket 관련 허용
-                                "/ws",
-                                "/ws/**",
-                                "/ws/redis/**",
-                                "/topic/**",
-                                "/topic/user/**",
-                                "/app/**",
-                                // 채팅 관련 API
-                                "/api/core/chat/**",
-                                "/api/core/chat/rooms/**",
-                                "/api/core/chat/rooms/{chatroomId}/read",
-                                "/api/core/chat/rooms/{chatroomId}/approve",
-                                "/api/core/chat/messages/**",
-                                "/api/core/boards/{boardId}/members", // 게시판 멤버 조회 API 추가                        
-                                "/api/core/market/products/requests/approval-status"
-                        ).permitAll()
-                        // 관리자 전용 API
+                        // 공개 경로 — SecurityConstants와 동일하게 유지
+                        .requestMatchers(SecurityConstants.PUBLIC_PATHS).permitAll()
+                        // 관리자 전용
                         .requestMatchers("/api/core/profiles/admin/**").hasRole("ADMIN")
-                        // 인증이 필요한 엔드포인트
-                        .requestMatchers(
-                                "/api/core/market/products/registers",
-                                "/api/core/market/products/requests",
-                                "/api/core/market/products/requests/approve",
-                                "/api/core/market/products/users/**",
-                                "/api/core/market/products/nearby",
-                                "/api/core/market/transactions",
-                                "/api/core/market/transactions/**",
-                                "/api/core/market/payments",
-                                "/api/core/market/payments/**")
-                        .authenticated()
+                        // 그 외 모든 요청은 인증 필요
                         .anyRequest().authenticated())
                 // JWT 필터 추가
                 .addFilterBefore(

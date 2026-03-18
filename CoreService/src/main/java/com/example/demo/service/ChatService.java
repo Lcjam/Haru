@@ -1,6 +1,8 @@
 package com.example.demo.service;
 
 import com.example.demo.dto.chat.*;
+import com.example.demo.exception.ResourceNotFoundException;
+import com.example.demo.exception.UnauthorizedException;
 import com.example.demo.mapper.ChatRoomMapper;
 import com.example.demo.mapper.ChatMessageMapper;
 import com.example.demo.mapper.Market.ProductMapper;
@@ -248,6 +250,57 @@ public class ChatService {
         return null;
     }
     
+    /**
+     * 함께하기 요청 승인
+     * - 상품 등록자만 승인 가능
+     * - 승인 후 모집 인원 증가 및 모집 마감 여부 갱신
+     */
+    @Transactional
+    public ChatRoomResponse approveChatMember(String callerEmail, Integer chatroomId) {
+        ChatRoom chatRoom = chatRoomMapper.findChatRoomById(chatroomId, callerEmail);
+        if (chatRoom == null) {
+            throw new ResourceNotFoundException("채팅방을 찾을 수 없습니다.");
+        }
+
+        if (!chatRoom.getSellerEmail().equals(callerEmail)) {
+            throw new UnauthorizedException("상품 등록자만 승인할 수 있습니다.");
+        }
+
+        Long productId = chatRoom.getProductId();
+        String requesterEmail = chatRoom.getRequestEmail();
+
+        Long requestId = productRequestMapper.findRequestId(productId, requesterEmail);
+        if (requestId == null) {
+            throw new ResourceNotFoundException("해당 요청을 찾을 수 없습니다.");
+        }
+
+        productMapper.updateRequestApprovalStatus(requestId, "승인");
+        productMapper.increaseCurrentParticipants(productId);
+        productMapper.updateProductVisibility(productId);
+
+        return ChatRoomResponse.builder()
+                .success(true)
+                .message("요청이 승인되었습니다.")
+                .chatroomId(chatroomId)
+                .productId(productId)
+                .requestEmail(requesterEmail)
+                .build();
+    }
+
+    /**
+     * 상품 ID로 채팅방 ID 조회
+     */
+    public ChatRoomResponse getChatRoomIdByProductId(String userEmail, Long productId) {
+        ChatRoom chatRoom = chatRoomMapper.findChatRoomByProductIdAndEmail(productId, userEmail);
+        if (chatRoom == null) {
+            throw new ResourceNotFoundException("채팅방을 찾을 수 없습니다.");
+        }
+        return ChatRoomResponse.builder()
+                .success(true)
+                .chatroomId(chatRoom.getChatroomId())
+                .build();
+    }
+
     /**
      * 채팅방 상태 업데이트
      */

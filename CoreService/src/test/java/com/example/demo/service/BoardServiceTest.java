@@ -42,6 +42,9 @@ class BoardServiceTest {
     @Mock
     private FileStorageService fileStorageService;
 
+    @Mock
+    private NotificationService notificationService;
+
     @InjectMocks
     private BoardService boardService;
 
@@ -85,7 +88,6 @@ class BoardServiceTest {
     void createBoard_Success() {
         // given
         when(userMapper.findByEmail("test@example.com")).thenReturn(user);
-        when(boardMapper.findBoardById(anyLong())).thenReturn(board);
         doNothing().when(boardMapper).createBoard(any(Board.class));
         doNothing().when(boardMemberMapper).addMember(any(BoardMember.class));
 
@@ -258,8 +260,10 @@ class BoardServiceTest {
 
         // then
         assertThat(result).isNotNull();
-        verify(userMapper, times(2)).findByEmail(anyString());
+        verify(userMapper, times(1)).findByEmail(anyString());
         verify(boardMemberMapper, times(1)).addMember(any(BoardMember.class));
+        verify(notificationService, times(1))
+                .sendNotification(eq(inviteEmail), contains("게시판에 초대되었습니다"), eq("BOARD_INVITATION"), eq(0), eq(0L));
     }
 
     @Test

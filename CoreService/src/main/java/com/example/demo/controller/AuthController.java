@@ -16,6 +16,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -161,12 +162,11 @@ public class AuthController {
     })
     @PutMapping("/me/password")
     public ResponseEntity<PasswordChangeResponse> changePassword(
-            @Parameter(description = "JWT 토큰 (Bearer {token} 형식)", required = true)
-            @RequestHeader("Authorization") String token,
+            Authentication authentication,
             @Parameter(description = "비밀번호 변경 요청 정보", required = true)
             @RequestBody PasswordChangeRequest request) {
-        // 서비스 호출
-        PasswordChangeResponse response = userService.changePasswordByToken(token, request);
+        request.setEmail(authentication.getName());
+        PasswordChangeResponse response = userService.changePassword(request);
 
         if (!response.isSuccess()) {
             return ResponseEntity.badRequest().body(response);
@@ -196,6 +196,8 @@ public class AuthController {
             @Parameter(description = "비밀번호 변경 요청 정보 (이메일, 전화번호, 새 비밀번호)", required = true)
             @RequestBody PasswordChangeRequest request) {
         log.debug("/me/password/notoken에 접근했습니다. 요청: {}", request);
+        // 이 엔드포인트는 항상 전화번호 인증 경로를 사용해야 합니다 (현재 비밀번호 경로 차단)
+        request.setIsToken("false");
         PasswordChangeResponse response = userService.changePassword(request);
 
         if (!response.isSuccess()) {

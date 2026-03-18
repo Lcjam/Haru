@@ -11,7 +11,6 @@ import com.example.demo.model.User;
 import com.example.demo.service.ChatMessageService;
 import com.example.demo.service.NotificationService;
 import com.example.demo.service.UserService;
-import com.example.demo.util.TokenUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -23,6 +22,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
@@ -40,7 +40,6 @@ import java.security.Principal;
 public class ChatMessageController {
 
     private final ChatMessageService chatMessageService;
-    private final TokenUtils tokenUtils;
     private final SimpMessagingTemplate messagingTemplate;
     private final NotificationService notificationService;
     private final ChatRoomMapper chatRoomMapper;
@@ -141,29 +140,12 @@ public class ChatMessageController {
     })
     @PostMapping("/messages")
     public ResponseEntity<BaseResponse<?>> sendMessage(
-            @Parameter(description = "JWT 토큰 (Bearer {token} 형식)", required = true)
-            @RequestHeader("Authorization") String token,
+            Authentication authentication,
             @Parameter(description = "메시지 전송 요청 정보", required = true)
             @RequestBody ChatMessageRequest request) {
-        
-        String tokenWithoutBearer = tokenUtils.extractTokenWithoutBearer(token);
-        
-        if (!tokenUtils.isTokenValid(tokenWithoutBearer)) {
-            return ResponseEntity.status(401).body(BaseResponse.error("인증되지 않은 요청입니다.", "401"));
-        }
-        
-        String email = tokenUtils.getEmailFromToken(tokenWithoutBearer);
-        
-        try {
-            ChatMessage message = chatMessageService.sendMessage(email, request);
-            return ResponseEntity.ok(BaseResponse.success(message));
-        } catch (IllegalArgumentException e) {
-            log.warn("메시지 전송 검증 실패: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(BaseResponse.error(e.getMessage(), "400"));
-        } catch (Exception e) {
-            log.error("메시지 전송 중 오류 발생: {}", e.getMessage());
-            return ResponseEntity.status(500).body(BaseResponse.error("메시지 전송 중 오류가 발생했습니다.", "500"));
-        }
+
+        ChatMessage message = chatMessageService.sendMessage(authentication.getName(), request);
+        return ResponseEntity.ok(BaseResponse.success(message));
     }
 
     @Operation(
@@ -189,22 +171,15 @@ public class ChatMessageController {
     })
     @GetMapping("/rooms/{chatroomId}/messages")
     public ResponseEntity<BaseResponse<?>> getChatMessages(
-            @Parameter(description = "JWT 토큰 (Bearer {token} 형식)", required = true)
-            @RequestHeader("Authorization") String token,
+            Authentication authentication,
             @Parameter(description = "채팅방 ID", required = true, example = "1")
             @PathVariable Integer chatroomId,
             @Parameter(description = "페이지 번호 (선택사항)", example = "0")
             @RequestParam(required = false) Integer page,
             @Parameter(description = "페이지 크기 (선택사항)", example = "20")
             @RequestParam(required = false) Integer size) {
-        
-        String tokenWithoutBearer = tokenUtils.extractTokenWithoutBearer(token);
-        
-        if (!tokenUtils.isTokenValid(tokenWithoutBearer)) {
-            return ResponseEntity.status(401).body(BaseResponse.error("인증되지 않은 요청입니다.", "401"));
-        }
-        
-        String email = tokenUtils.getEmailFromToken(tokenWithoutBearer);
+
+        String email = authentication.getName();
         ChatMessagesResponse response = chatMessageService.getChatMessages(chatroomId, email, page, size);
         
         if (!response.isSuccess()) {
@@ -237,32 +212,17 @@ public class ChatMessageController {
     })
     @PutMapping("/rooms/{chatroomId}/messages/read")
     public ResponseEntity<BaseResponse<?>> markMessagesAsRead(
-            @Parameter(description = "JWT 토큰 (Bearer {token} 형식)", required = true)
-            @RequestHeader("Authorization") String token,
+            Authentication authentication,
             @Parameter(description = "채팅방 ID", required = true, example = "1")
             @PathVariable Integer chatroomId) {
-        
-        String tokenWithoutBearer = tokenUtils.extractTokenWithoutBearer(token);
-        
-        if (!tokenUtils.isTokenValid(tokenWithoutBearer)) {
-            return ResponseEntity.status(401).body(BaseResponse.error("인증되지 않은 요청입니다.", "401"));
-        }
-        
-        String email = tokenUtils.getEmailFromToken(tokenWithoutBearer);
-        
-        try {
-            boolean success = chatMessageService.markMessagesAsRead(chatroomId, email);
-            
-            if (success) {
-                return ResponseEntity.ok(BaseResponse.success("메시지가 읽음 상태로 업데이트 되었습니다."));
-            } else {
-                return ResponseEntity.badRequest().body(BaseResponse.error("메시지 상태 업데이트 실패", "400"));
-            }
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(BaseResponse.error(e.getMessage(), "400"));
-        } catch (Exception e) {
-            log.error("메시지 읽음 상태 업데이트 중 오류 발생: {}", e.getMessage());
-            return ResponseEntity.status(500).body(BaseResponse.error("서버 오류가 발생했습니다.", "500"));
+
+        String email = authentication.getName();
+
+        boolean success = chatMessageService.markMessagesAsRead(chatroomId, email);
+        if (success) {
+            return ResponseEntity.ok(BaseResponse.success("메시지가 읽음 상태로 업데이트 되었습니다."));
+        } else {
+            return ResponseEntity.badRequest().body(BaseResponse.error("메시지 상태 업데이트 실패", "400"));
         }
     }
 
@@ -289,31 +249,17 @@ public class ChatMessageController {
     })
     @PostMapping(value = "/messages/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<BaseResponse<?>> sendImageMessage(
-            @Parameter(description = "JWT 토큰 (Bearer {token} 형식)", required = true)
-            @RequestHeader("Authorization") String token,
+            Authentication authentication,
             @Parameter(description = "채팅방 ID", required = true, example = "1")
             @RequestParam("chatroomId") Integer chatroomId,
             @Parameter(description = "이미지 파일", required = true)
             @RequestParam("image") MultipartFile image) {
-        
-        String tokenWithoutBearer = tokenUtils.extractTokenWithoutBearer(token);
-        
-        if (!tokenUtils.isTokenValid(tokenWithoutBearer)) {
-            return ResponseEntity.status(401).body(BaseResponse.error("인증되지 않은 요청입니다.", "401"));
-        }
-        
+
         if (image == null || image.isEmpty()) {
-            return ResponseEntity.badRequest().body(BaseResponse.error("이미지 파일이 필요합니다.", "400"));
+            throw new IllegalArgumentException("이미지 파일이 필요합니다.");
         }
-        
-        String email = tokenUtils.getEmailFromToken(tokenWithoutBearer);
-        
-        try {
-            ChatMessage message = chatMessageService.sendImageMessage(email, chatroomId, image);
-            return ResponseEntity.ok(BaseResponse.success(message));
-        } catch (Exception e) {
-            log.error("이미지 메시지 전송 실패: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(BaseResponse.error("이미지 메시지 전송 실패: " + e.getMessage(), "400"));
-        }
+
+        ChatMessage message = chatMessageService.sendImageMessage(authentication.getName(), chatroomId, image);
+        return ResponseEntity.ok(BaseResponse.success(message));
     }
 }

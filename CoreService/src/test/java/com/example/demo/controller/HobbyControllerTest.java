@@ -4,8 +4,8 @@ import com.example.demo.dto.hobby.HobbyRequest;
 import com.example.demo.model.Category;
 import com.example.demo.model.Hobby;
 import com.example.demo.model.UserHobby;
+import com.example.demo.config.TestSecurityConfig;
 import com.example.demo.service.HobbyService;
-import com.example.demo.util.TokenUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -13,8 +13,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -27,6 +30,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(HobbyController.class)
+@Import(TestSecurityConfig.class)
 @DisplayName("HobbyController 테스트")
 class HobbyControllerTest {
 
@@ -38,9 +42,6 @@ class HobbyControllerTest {
 
     @MockBean
     private HobbyService hobbyService;
-
-    @MockBean
-    private TokenUtils tokenUtils;
 
     private Hobby hobby1;
     private Hobby hobby2;
@@ -146,41 +147,23 @@ class HobbyControllerTest {
     @DisplayName("사용자의 취미 목록 조회 성공 - 200 OK")
     void getUserHobbies_Success() throws Exception {
         // given
-        when(tokenUtils.getEmailFromAuthHeader("Bearer testToken")).thenReturn("test@example.com");
         when(hobbyService.getUserHobbies("test@example.com")).thenReturn(userHobbies);
 
         // when & then
-        mockMvc.perform(get("/api/core/hobbies/user")
-                        .header("Authorization", "Bearer testToken"))
+        mockMvc.perform(get("/api/core/hobbies/user").with(user("test@example.com")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"));
         verify(hobbyService, times(1)).getUserHobbies("test@example.com");
     }
 
     @Test
-    @DisplayName("사용자의 취미 목록 조회 실패 - 인증 실패 - 401 Unauthorized")
-    void getUserHobbies_Fail_Unauthorized() throws Exception {
-        // given
-        when(tokenUtils.getEmailFromAuthHeader("Bearer invalidToken")).thenReturn(null);
-
-        // when & then
-        mockMvc.perform(get("/api/core/hobbies/user")
-                        .header("Authorization", "Bearer invalidToken"))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.status").value("error"));
-        verify(hobbyService, never()).getUserHobbies(anyString());
-    }
-
-    @Test
     @DisplayName("사용자의 취미 등록/수정 성공 - 200 OK")
     void updateUserHobbies_Success() throws Exception {
         // given
-        when(tokenUtils.getEmailFromAuthHeader("Bearer testToken")).thenReturn("test@example.com");
         doNothing().when(hobbyService).registerUserHobbies(anyString(), anyList());
 
         // when & then
-        mockMvc.perform(post("/api/core/hobbies/user")
-                        .header("Authorization", "Bearer testToken")
+        mockMvc.perform(post("/api/core/hobbies/user").with(user("test@example.com"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(hobbyRequests)))
                 .andExpect(status().isOk())
@@ -190,32 +173,14 @@ class HobbyControllerTest {
     }
 
     @Test
-    @DisplayName("사용자의 취미 등록/수정 실패 - 인증 실패 - 401 Unauthorized")
-    void updateUserHobbies_Fail_Unauthorized() throws Exception {
-        // given
-        when(tokenUtils.getEmailFromAuthHeader("Bearer invalidToken")).thenReturn(null);
-
-        // when & then
-        mockMvc.perform(post("/api/core/hobbies/user")
-                        .header("Authorization", "Bearer invalidToken")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(hobbyRequests)))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.status").value("error"));
-        verify(hobbyService, never()).registerUserHobbies(anyString(), anyList());
-    }
-
-    @Test
     @DisplayName("사용자의 취미 등록/수정 실패 - 유효하지 않은 취미 정보 - 400 Bad Request")
     void updateUserHobbies_Fail_InvalidHobby() throws Exception {
         // given
-        when(tokenUtils.getEmailFromAuthHeader("Bearer testToken")).thenReturn("test@example.com");
         doThrow(new IllegalArgumentException("해당 취미가 카테고리에 속하지 않습니다."))
                 .when(hobbyService).registerUserHobbies(anyString(), anyList());
 
         // when & then
-        mockMvc.perform(post("/api/core/hobbies/user")
-                        .header("Authorization", "Bearer testToken")
+        mockMvc.perform(post("/api/core/hobbies/user").with(user("test@example.com"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(hobbyRequests)))
                 .andExpect(status().isBadRequest())

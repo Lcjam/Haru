@@ -3,7 +3,6 @@ package com.example.demo.controller.Market;
 import com.example.demo.dto.Market.LocationRequest;
 import com.example.demo.model.Market.UserLocation;
 import com.example.demo.service.Market.UserLocationService;
-import com.example.demo.security.JwtTokenProvider;
 import com.example.demo.util.BaseResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -13,6 +12,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "사용자 위치 관리", description = "마켓플레이스 사용자 위치 정보 업데이트 및 조회 관련 API")
@@ -20,11 +20,9 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/core/market/users")
 public class UserLocationController {
     private final UserLocationService userLocationService;
-    private final JwtTokenProvider jwtTokenProvider;
 
-    public UserLocationController(UserLocationService userLocationService, JwtTokenProvider jwtTokenProvider) {
+    public UserLocationController(UserLocationService userLocationService) {
         this.userLocationService = userLocationService;
-        this.jwtTokenProvider = jwtTokenProvider;
     }
 
     @Operation(
@@ -47,21 +45,9 @@ public class UserLocationController {
     public ResponseEntity<BaseResponse<String>> updateUserLocation(
             @Parameter(description = "위치 정보 요청 (위도, 경도, 위치명)", required = true)
             @RequestBody LocationRequest request,
-            @Parameter(description = "JWT 토큰 (Bearer {token} 형식)", required = true)
-            @RequestHeader(value = "Authorization", required = false) String token) {
+            Authentication authentication) {
 
-        // 토큰 검증
-        if (token == null || !token.startsWith("Bearer ")) {
-            return ResponseEntity.status(401).body(BaseResponse.error("토큰이 누락되었습니다. 인증이 필요합니다."));
-        }
-
-        // JWT에서 이메일 추출
-        String email;
-        try {
-            email = jwtTokenProvider.getUsername(token);
-        } catch (Exception e) {
-            return ResponseEntity.status(401).body(BaseResponse.error("유효하지 않은 토큰입니다."));
-        }
+        String email = authentication.getName();
 
         // 위치 정보 객체 생성 및 저장
         UserLocation location = new UserLocation();
@@ -93,21 +79,9 @@ public class UserLocationController {
     })
     @GetMapping("/location/latest")
     public ResponseEntity<BaseResponse<UserLocation>> getUserLatestLocation(
-            @Parameter(description = "JWT 토큰 (Bearer {token} 형식)", required = true)
-            @RequestHeader(value = "Authorization", required = false) String token) {
+            Authentication authentication) {
 
-        // 토큰 검증
-        if (token == null || !token.startsWith("Bearer ")) {
-            return ResponseEntity.status(401).body(BaseResponse.error("토큰이 누락되었습니다. 인증이 필요합니다."));
-        }
-
-        // JWT에서 이메일 추출
-        String email;
-        try {
-            email = jwtTokenProvider.getUsername(token);
-        } catch (Exception e) {
-            return ResponseEntity.status(401).body(BaseResponse.error("유효하지 않은 토큰입니다."));
-        }
+        String email = authentication.getName();
 
         // 최신 위치 정보 가져오기
         UserLocation latestLocation = userLocationService.getUserLatestLocation(email);

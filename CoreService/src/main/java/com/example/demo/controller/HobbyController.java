@@ -6,7 +6,6 @@ import com.example.demo.model.Category;
 import com.example.demo.model.Hobby;
 import com.example.demo.model.UserHobby;
 import com.example.demo.service.HobbyService;
-import com.example.demo.util.TokenUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -17,9 +16,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -31,7 +30,6 @@ import java.util.Map;
 public class HobbyController {
 
     private final HobbyService hobbyService;
-    private final TokenUtils tokenUtils;
 
     @Operation(
             summary = "모든 취미 목록 조회 (카테고리 정보 포함)",
@@ -120,17 +118,10 @@ public class HobbyController {
             )
     })
     @GetMapping("/user")
-    public ResponseEntity<?> getUserHobbies(
-            @Parameter(description = "JWT 토큰 (Bearer {token} 형식)", required = true)
-            @RequestHeader("Authorization") String token) {
-        String email = tokenUtils.getEmailFromAuthHeader(token);
-        
-        if (email == null) {
-            Map<String, String> errorData = new HashMap<>();
-            errorData.put("message", "인증되지 않은 요청입니다.");
-            return ResponseEntity.status(401).body(BaseResponse.error(errorData, "401"));
-        }
-        
+    public ResponseEntity<BaseResponse<?>> getUserHobbies(
+            Authentication authentication) {
+        String email = authentication.getName();
+
         List<UserHobby> userHobbies = hobbyService.getUserHobbies(email);
         return ResponseEntity.ok(BaseResponse.success(userHobbies));
     }
@@ -157,36 +148,18 @@ public class HobbyController {
             )
     })
     @PostMapping("/user")
-    public ResponseEntity<?> updateUserHobbies(
-            @Parameter(description = "JWT 토큰 (Bearer {token} 형식)", required = true)
-            @RequestHeader("Authorization") String token,
+    public ResponseEntity<BaseResponse<?>> updateUserHobbies(
+            Authentication authentication,
             @Parameter(description = "등록할 취미 목록 (hobbyId, categoryId 포함)", required = true)
             @RequestBody List<HobbyRequest> hobbies) {
-        
-        String email = tokenUtils.getEmailFromAuthHeader(token);
-        
-        if (email == null) {
-            Map<String, String> errorData = new HashMap<>();
-            errorData.put("message", "인증되지 않은 요청입니다.");
-            return ResponseEntity.status(401).body(BaseResponse.error(errorData, "401"));
-        }
-        
-        try {
-            hobbyService.registerUserHobbies(email, hobbies);
-            
-            Map<String, Object> responseData = new HashMap<>();
-            responseData.put("message", "취미 정보가 업데이트되었습니다.");
-            responseData.put("count", hobbies.size());
-            
-            return ResponseEntity.ok(BaseResponse.success(responseData));
-            
-        } catch (Exception e) {
-            log.error("취미 업데이트 중 오류 발생: {}", e.getMessage());
-            
-            Map<String, Object> errorData = new HashMap<>();
-            errorData.put("message", "취미 정보 업데이트 중 오류가 발생했습니다: " + e.getMessage());
-            
-            return ResponseEntity.badRequest().body(BaseResponse.error(errorData, "400"));
-        }
+        String email = authentication.getName();
+        hobbyService.registerUserHobbies(email, hobbies);
+
+        Map<String, Object> responseData = Map.of(
+                "message", "취미 정보가 업데이트되었습니다.",
+                "count", hobbies.size()
+        );
+        return ResponseEntity.ok(BaseResponse.success(responseData));
     }
+
 }

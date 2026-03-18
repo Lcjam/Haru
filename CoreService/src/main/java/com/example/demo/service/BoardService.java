@@ -1,13 +1,14 @@
 package com.example.demo.service;
 
 import com.example.demo.dto.board.*;
+import com.example.demo.exception.ResourceNotFoundException;
+import com.example.demo.exception.UnauthorizedException;
 import com.example.demo.mapper.UserMapper;
 import com.example.demo.mapper.board.BoardMapper;
 import com.example.demo.mapper.board.BoardMemberMapper;
 import com.example.demo.model.User;
 import com.example.demo.model.board.Board;
 import com.example.demo.model.board.BoardMember;
-import com.example.demo.util.TokenUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -25,8 +26,8 @@ public class BoardService {
     private final BoardMapper boardMapper;
     private final BoardMemberMapper boardMemberMapper;
     private final UserMapper userMapper;
-    private final TokenUtils tokenUtils;
     private final FileStorageService fileStorageService;
+    private final NotificationService notificationService;
 
     /**
      * 게시판 생성
@@ -104,6 +105,23 @@ public class BoardService {
         return boards.stream()
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 사용자가 게시판의 활성 멤버(호스트 포함)인지 확인합니다.
+     * 멤버가 아니면 UnauthorizedException을 던집니다.
+     */
+    public void checkActiveMembership(String userEmail, Long boardId) {
+        Board board = boardMapper.findBoardById(boardId);
+        if (board == null) {
+            throw new ResourceNotFoundException("게시판을 찾을 수 없습니다.");
+        }
+        if (!board.getHostEmail().equals(userEmail)) {
+            BoardMember member = boardMemberMapper.findMemberByBoardIdAndUserEmail(boardId, userEmail);
+            if (member == null || !"ACTIVE".equals(member.getStatus())) {
+                throw new UnauthorizedException("게시판 멤버만 이용할 수 있습니다.");
+            }
+        }
     }
 
     /**
@@ -189,8 +207,8 @@ public class BoardService {
                 boardId, hostEmail, inviteEmail, role);
         
         // 초대 대상 사용자가 존재하는지 확인
-        User inviteUser = userMapper.findByEmail(inviteEmail);
-        if (inviteUser == null) {
+        User invitee = userMapper.findByEmail(inviteEmail);
+        if (invitee == null) {
             throw new IllegalArgumentException("초대 대상 사용자를 찾을 수 없습니다.");
         }
         
@@ -204,12 +222,6 @@ public class BoardService {
         if (inviterMembership == null || 
             (!inviterMembership.getRole().equals("HOST") && !inviterMembership.getRole().equals("ADMIN"))) {
             throw new IllegalArgumentException("멤버 초대 권한이 없습니다.");
-        }
-
-        // 초대 대상 사용자 확인
-        User invitee = userMapper.findByEmail(inviteEmail);
-        if (invitee == null) {
-            throw new IllegalArgumentException("초대 대상 사용자를 찾을 수 없습니다.");
         }
 
         // 이미 멤버인지 확인
@@ -237,7 +249,13 @@ public class BoardService {
 
         boardMemberMapper.addMember(newMember);
 
-        // TODO: 초대 알림 발송 로직 추가
+        notificationService.sendNotification(
+                inviteEmail,
+                String.format("[%s] 게시판에 초대되었습니다.", board.getName()),
+                "BOARD_INVITATION",
+                0,
+                0L
+        );
 
         return convertToResponse(board);
     }
