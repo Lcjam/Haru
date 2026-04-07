@@ -24,7 +24,7 @@ public class RedisMessageListener {
             ChatMessage chatMessage = objectMapper.readValue(message, ChatMessage.class);
             
             // 채팅방 ID를 통해 WebSocket 주제로 메시지 발행
-            String destination = "/topic/chat." + chatMessage.getChatroomId();
+            String destination = "/topic/room." + chatMessage.getChatroomId();
             messagingTemplate.convertAndSend(destination, chatMessage);
             
             log.info("Redis -> WebSocket 메시지 발행 성공: {} -> {}", chatMessage.getSenderEmail(), destination);

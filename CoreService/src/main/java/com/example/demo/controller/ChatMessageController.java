@@ -26,7 +26,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -40,7 +39,6 @@ import java.security.Principal;
 public class ChatMessageController {
 
     private final ChatMessageService chatMessageService;
-    private final SimpMessagingTemplate messagingTemplate;
     private final NotificationService notificationService;
     private final ChatRoomMapper chatRoomMapper;
     private final UserMapper userMapper;
@@ -65,27 +63,8 @@ public class ChatMessageController {
                 messageRequest.getChatroomId(), senderEmail);
         
         try {
-            // 메시지 저장 및 발행
+            // 메시지 저장
             ChatMessage chatMessage = chatMessageService.sendMessage(senderEmail, messageRequest);
-            
-            // 메시지를 채팅방의 모든 구독자에게 브로드캐스트
-            messagingTemplate.convertAndSend(
-                "/topic/room." + messageRequest.getChatroomId(), 
-                chatMessage
-            );
-
-            // UserMapper를 직접 사용하여 사용자 정보 조회
-            User sender = userMapper.findByEmail(senderEmail);
-            String senderNickname = sender != null ? sender.getNickname() : "알 수 없음";
-
-            // 알림 메시지 구성
-            String notificationChatMessage = String.format("[%s] %s: %s",
-                messageRequest.getProductId(),
-                senderNickname, 
-                messageRequest.getContent().length() > 30 
-                    ? messageRequest.getContent().substring(0, 27) + "..." 
-                    : messageRequest.getContent()
-            );
 
             // ChatRoomMapper를 직접 사용하여 채팅방 정보 조회
             ChatRoom chatRoom = chatRoomMapper.findChatRoomById(messageRequest.getChatroomId(), senderEmail);
@@ -93,6 +72,21 @@ public class ChatMessageController {
                 log.error("채팅방을 찾을 수 없음: chatroomId={}", messageRequest.getChatroomId());
                 return;
             }
+
+            Long productId = chatRoom.getProductId() != null ? chatRoom.getProductId() : messageRequest.getProductId();
+
+            // UserMapper를 직접 사용하여 사용자 정보 조회
+            User sender = userMapper.findByEmail(senderEmail);
+            String senderNickname = sender != null ? sender.getNickname() : "알 수 없음";
+
+            // 알림 메시지 구성
+            String notificationChatMessage = String.format("[%s] %s: %s",
+                productId,
+                senderNickname, 
+                messageRequest.getContent().length() > 30 
+                    ? messageRequest.getContent().substring(0, 27) + "..." 
+                    : messageRequest.getContent()
+            );
 
             // 수신자 이메일 결정 (발신자가 구매자면 판매자에게, 발신자가 판매자면 구매자에게)
             String receiverEmail;
@@ -108,7 +102,7 @@ public class ChatMessageController {
                 notificationChatMessage,
                 "CHAT_MESSAGE",
                 messageRequest.getChatroomId(),
-                messageRequest.getProductId()
+                productId
             );
             
             log.info("메시지 발행 완료: messageId={}", chatMessage.getMessageId());

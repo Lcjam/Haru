@@ -77,7 +77,7 @@ public class ChatMessageService {
         ChatMessage message = ChatMessage.builder()
                 .chatroomId(request.getChatroomId())
                 .senderEmail(senderEmail)
-                .productId(request.getProductId())
+                .productId(chatRoom.getProductId())
                 .content(request.getContent())
                 .messageType(request.getMessageType())
                 .sentAt(LocalDateTime.now())
@@ -126,6 +126,7 @@ public class ChatMessageService {
             redisTemplate.convertAndSend(chatChannelTopic.getTopic(), message);
         } catch (Exception e) {
             log.error("Redis 메시지 발행 실패: {}", e.getMessage());
+            throw new RuntimeException("Redis 메시지 발행 실패", e);
         }
         
         return message;
