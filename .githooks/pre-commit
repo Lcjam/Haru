@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+blocked_files="$(git diff --cached --name-only --diff-filter=ACMR | grep -E '\.(md|toml)$' || true)"
+
+if [[ -n "${blocked_files}" ]]; then
+  echo "Commit blocked: .md and .toml files are not allowed."
+  echo "Remove these files from staging and try again:"
+  echo "${blocked_files}"
+  exit 1
+fi
+
+exit 0
