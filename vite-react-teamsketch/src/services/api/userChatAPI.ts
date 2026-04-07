@@ -88,6 +88,14 @@ export interface ChatRoomRequest {
   requestEmail?: string;
 }
 
+export interface SendChatMessagePayload {
+  chatroomId: number;
+  productId: number;
+  senderEmail: string;
+  content: string;
+  messageType: MessageType;
+}
+
 // 채팅방 목록 조회 API 함수
 export const fetchChatRooms = async (): Promise<ChatRoom[]> => {
   try {
@@ -168,14 +176,11 @@ export const updateMessagesRead = async (chatroomId: number): Promise<any> => {
 };
 
 // 채팅방 메시지 전송 함수
-export const sendChatMessage = async (
-  roomId: number,
-  message: string
-): Promise<any> => {
+export async function sendChatMessage(payload: SendChatMessagePayload): Promise<any> {
   try {
     const response = await axiosInstance.post(
-      apiConfig.endpoints.core.sendMessage(roomId),
-      { content: message }
+      apiConfig.endpoints.core.sendChatMessage,
+      payload
     );
     
     if (response.data.status === 'success') {
@@ -189,7 +194,7 @@ export const sendChatMessage = async (
     console.error('메시지 전송 오류:', error);
     throw error;
   }
-};
+}
 
 // React Query Hooks
 
@@ -233,7 +238,6 @@ export const useUpdateMessagesRead = () => {
 // 채팅 메시지 전송 Hook
 export const useSendMessage = () => {
   return useMutation({
-    mutationFn: ({roomId, message}: {roomId: number; message: string}) => 
-      sendChatMessage(roomId, message)
+    mutationFn: (payload: SendChatMessagePayload) => sendChatMessage(payload)
   });
 };

@@ -47,7 +47,7 @@ const ChatRoom: React.FC = () => {
   const { data: productData } = useProductByProductId(chatInfo?.productId || 0);
 
   // useChat 훅 사용
-  const { messages, sendMessage, sendImage, isConnected, connect } = useChat({
+  const { messages, sendMessage, isConnected, connect } = useChat({
     chatroomId: Number(chatroomId),
     userEmail,
     productId: Number(chatInfo?.productId) || 0,
@@ -191,7 +191,7 @@ const ChatRoom: React.FC = () => {
       try {
         setIsLoadingMessages(true);
         const response = await axiosInstance.get(
-          `${apiConfig.endpoints.core.base}/chat/rooms/${chatroomId}/messages`
+          apiConfig.endpoints.core.getChatMessages(Number(chatroomId))
         );
         
         if (response.data?.status === 'success' && response.data?.data?.messages) {
@@ -225,7 +225,7 @@ const ChatRoom: React.FC = () => {
 
       try {
         await axiosInstance.put(
-          `${apiConfig.endpoints.core.base}/chat/rooms/${chatroomId}/messages/read`,
+          apiConfig.endpoints.core.updateMessagesRead(Number(chatroomId)),
           null,
           {
             headers: {
@@ -266,7 +266,7 @@ useEffect(() => {
       
       // API 호출로도 읽음 처리
       axiosInstance.put(
-        `${apiConfig.endpoints.core.base}/chat/rooms/${chatroomId}/messages/read`,
+        apiConfig.endpoints.core.updateMessagesRead(Number(chatroomId)),
         null,
         {
           headers: {
@@ -531,7 +531,7 @@ useEffect(() => {
 
     try {
       const response = await axiosInstance.post(
-        `${apiConfig.endpoints.core.base}/chat/rooms/${chatroomId}/approve`
+        apiConfig.endpoints.core.approveChatMember(Number(chatroomId))
       );
       
       if (response.data?.status === 'success') {
@@ -558,23 +558,21 @@ useEffect(() => {
   // 메시지 전송 핸들러
   const handleSendMessage = async (
     message: string,
-    file?: { type: string; url: string; name?: string }
+    imageFile?: File
   ) => {
-    if (!message.trim() && !file) return;
+    if (!message.trim() && !imageFile) return;
+    if (!chatroomId) return;
 
     try {
-      const now = new Date();
-      const kstDate = new Date(now.getTime() + (9 * 60 * 60 * 1000));
-      
-      if (file) {
-        if (file.type === 'image') {
-          // 이미지 메시지 처리
-          const formData = new FormData();
-          formData.append('file', file.url);
-          formData.append('message', message);
-          formData.append('sentAt', kstDate.toISOString());
-          await sendImage(formData.get('file') as string);
-        }
+      if (imageFile) {
+        const formData = new FormData();
+        formData.append('chatroomId', String(chatroomId));
+        formData.append('image', imageFile);
+
+        await axiosInstance.post(
+          apiConfig.endpoints.core.sendChatImage,
+          formData
+        );
       } else {
         // 텍스트 메시지 처리
         await sendMessage(chatInfo?.productId || 0, message.trim(), MessageType.TEXT);

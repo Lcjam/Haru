@@ -1,16 +1,29 @@
-import React, { useState, useRef } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { FaPaperclip, FaPaperPlane } from "react-icons/fa";
 
+// RF-003: backend upload contract only accepts image attachments.
+// Keep `url` for backward compatibility with existing consumers while making the
+// preview intent explicit through `previewUrl`.
+export type ImageAttachment = File & { previewUrl: string; url: string };
+
 interface MessageInputProps {
-  onSendMessage?: (message: string, file?: { type: string; url: string; name?: string }) => void;
+  onSendMessage?: (message: string, imageFile?: ImageAttachment) => void;
   onFocus?: () => void;
   onBlur?: () => void;
 }
 
 const MessageInput: React.FC<MessageInputProps> = ({onSendMessage, onFocus, onBlur }) => {
   const [message, setMessage] = useState("");
-  const [file, setFile] = useState<{ type: string; url: string; name?: string } | null>(null);
+  const [imageFile, setImageFile] = useState<ImageAttachment | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    return () => {
+      if (imageFile) {
+        URL.revokeObjectURL(imageFile.previewUrl);
+      }
+    };
+  }, [imageFile]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setMessage(e.target.value);
@@ -18,24 +31,20 @@ const MessageInput: React.FC<MessageInputProps> = ({onSendMessage, onFocus, onBl
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
-    if (selectedFile) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFile({
-          type: selectedFile.type.startsWith('image/') ? 'image' : 'file',
-          url: reader.result as string,
-          name: selectedFile.name
-        });
-      };
-      reader.readAsDataURL(selectedFile);
+    if (selectedFile?.type.startsWith('image/')) {
+      const objectUrl = URL.createObjectURL(selectedFile);
+      setImageFile(Object.assign(selectedFile, { previewUrl: objectUrl, url: objectUrl }) as ImageAttachment);
+    } else if (selectedFile) {
+      setImageFile(null);
     }
+    e.target.value = "";
   };
 
   const handleSend = () => {
-    if (!message.trim() && !file) return;
-    onSendMessage?.(message, file || undefined);
+    if (!message.trim() && !imageFile) return;
+    onSendMessage?.(message, imageFile || undefined);
     setMessage("");
-    setFile(null);
+    setImageFile(null);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -47,27 +56,24 @@ const MessageInput: React.FC<MessageInputProps> = ({onSendMessage, onFocus, onBl
 
   return (
     <div>
-      {/* 파일 미리보기 */}
-      {file && (
+      {/* 이미지 미리보기 */}
+      {imageFile && (
         <div className="relative w-40">
-          {/* 이미지 파일 미리보기 */}
-          {file.type === "image" && (
+          {imageFile.type.startsWith("image/") && (
             <img
-              src={file.url}
-              alt="이미지 미리보기"
+              src={imageFile.previewUrl}
+              alt="선택한 이미지 미리보기"
               className="w-full h-32 object-cover rounded-md shadow-md"
             />
           )}
-          {/* 파일 미리보기 */}
-          {file.type === "file" && (
-            <div className="p-3.5 ml-1 mr-1 border rounded-md text-sm bg-secondary-light">
-              📄 {file.name}
-            </div>
-          )}
 
-          {/* 파일 삭제 버튼 */}
           <button
-            onClick={() => setFile(null)}
+            onClick={() => {
+              setImageFile(null);
+              if (fileInputRef.current) {
+                fileInputRef.current.value = "";
+              }
+            }}
             className="absolute top-1 right-1 hover:bg-secondary-light font-bold bg-secondary-light text-secondary-dark text-xs px-2 py-1 rounded-full"
           >
             X
@@ -77,7 +83,7 @@ const MessageInput: React.FC<MessageInputProps> = ({onSendMessage, onFocus, onBl
       
       {/* 메시지 입력 및 전송 영역 */}
       <div className="flex items-center bg-white shadow-md pb-5 pt-3 border-t border-primary-200 dark:border-border-dark">
-        {/* 파일 선택 버튼 */}
+        {/* 이미지 선택 버튼 */}
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
@@ -90,10 +96,10 @@ const MessageInput: React.FC<MessageInputProps> = ({onSendMessage, onFocus, onBl
           ref={fileInputRef}
           onChange={handleFileChange}
           className="hidden"
-          accept="image/*,.pdf,.doc,.docx,.txt"
+          accept="image/*"
         />
 
-        {/* 메시지 입력창 */}
+        {/* 메시지 입력창: 텍스트는 WS, 이미지는 REST multipart */}
         <div className="flex-1 ml-2 mr-3 relative">
           <input
             type="text"
@@ -105,8 +111,7 @@ const MessageInput: React.FC<MessageInputProps> = ({onSendMessage, onFocus, onBl
             onFocus={onFocus}
             onBlur={onBlur}
           />
-          {/* 전송 버튼 */}
-          {(message.trim() || file) && (
+          {(message.trim() || imageFile) && (
             <button
               onClick={handleSend}
               className="absolute right-1 top-1/2 -translate-y-1/2 text-white hover:text-primary-600 transition-colors rounded-full p-2"
